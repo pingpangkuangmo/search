@@ -161,81 +161,85 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 		}
 		List<String> groupColumns=q.getGroupColumns();
 		List<String> columns=q.getColumns();
+		boolean haveSons=false;
 		if(groupColumns.size()>0 && columns.containsAll(groupColumns)){
-			List<String> fatherColumns=new ArrayList<String>();
-			Set<String> sons=new HashSet<String>();
-			Map<String,List<String>> sonsColumnsInfo=new HashMap<String,List<String>>();
-			Set<String> oneSons=new HashSet<String>();
-			Map<String,List<String>> oneSonsColumnsInfo=new HashMap<String,List<String>>();
-			//格式化结构
-			List<String> originColumns=q.getColumns();
-			for(String column:originColumns){
-				if(column.contains("as")){
-					String tmp=column.substring(column.indexOf(" as ")+4).trim();
-					//去掉as 别名时添加的 ``
-					if(tmp.startsWith("`") && tmp.endsWith("`")){
-						tmp=tmp.substring(1,tmp.length()-1);
+			haveSons=true;
+		}
+		List<String> fatherColumns=new ArrayList<String>();
+		Set<String> sons=new HashSet<String>();
+		Map<String,List<String>> sonsColumnsInfo=new HashMap<String,List<String>>();
+		Set<String> oneSons=new HashSet<String>();
+		Map<String,List<String>> oneSonsColumnsInfo=new HashMap<String,List<String>>();
+		//格式化结构
+		List<String> originColumns=q.getColumns();
+		for(String column:originColumns){
+			if(column.contains("as")){
+				String tmp=column.substring(column.indexOf(" as ")+4).trim();
+				//去掉as 别名时添加的 ``
+				if(tmp.startsWith("`") && tmp.endsWith("`")){
+					tmp=tmp.substring(1,tmp.length()-1);
+				}
+				if(tmp.contains(formatListFlag) && haveSons){
+					String[] tableAndColumn=tmp.split(formatListFlag);
+					if(tableAndColumn.length>1){
+						sons.add(tableAndColumn[0]);
+						List<String> sonColumns=sonsColumnsInfo.get(tableAndColumn[0]);
+						if(sonColumns==null){
+							sonColumns=new ArrayList<String>();
+						}
+						sonColumns.add(tableAndColumn[1]);
+						sonsColumnsInfo.put(tableAndColumn[0],sonColumns);
+					}else{
+						fatherColumns.add(tmp);
 					}
-					if(tmp.contains(formatListFlag)){
-						String[] tableAndColumn=tmp.split(formatListFlag);
-						if(tableAndColumn.length>1){
-							sons.add(tableAndColumn[0]);
-							List<String> sonColumns=sonsColumnsInfo.get(tableAndColumn[0]);
-							if(sonColumns==null){
-								sonColumns=new ArrayList<String>();
-							}
-							sonColumns.add(tableAndColumn[1]);
-							sonsColumnsInfo.put(tableAndColumn[0],sonColumns);
-						}else{
-							fatherColumns.add(tmp);
+				}else if(tmp.contains(formatMapFlag)){
+					String[] tableAndColumn=tmp.split(formatMapFlag);
+					if(tableAndColumn.length>1){
+						oneSons.add(tableAndColumn[0]);
+						List<String> sonColumns=oneSonsColumnsInfo.get(tableAndColumn[0]);
+						if(sonColumns==null){
+							sonColumns=new ArrayList<String>();
 						}
-					}else if(tmp.contains(formatMapFlag)){
-						String[] tableAndColumn=tmp.split(formatMapFlag);
-						if(tableAndColumn.length>1){
-							oneSons.add(tableAndColumn[0]);
-							List<String> sonColumns=oneSonsColumnsInfo.get(tableAndColumn[0]);
-							if(sonColumns==null){
-								sonColumns=new ArrayList<String>();
-							}
-							sonColumns.add(tableAndColumn[1]);
-							oneSonsColumnsInfo.put(tableAndColumn[0],sonColumns);
-						}else{
-							fatherColumns.add(tmp);
-						}
+						sonColumns.add(tableAndColumn[1]);
+						oneSonsColumnsInfo.put(tableAndColumn[0],sonColumns);
 					}else{
 						fatherColumns.add(tmp);
 					}
 				}else{
-					fatherColumns.add(column.substring(column.indexOf(".")+1));
+					fatherColumns.add(tmp);
 				}
+			}else{
+				fatherColumns.add(column.substring(column.indexOf(".")+1));
 			}
-			if(sons.size()>0 || oneSons.size()>0){
-				List<Map<String,Object>> ret=new ArrayList<Map<String,Object>>();
-				//先处理父元素
-				for(Map<String,Object> item:data){
-					//先构造本条数据
-					Map<String,Object> fatherTotal=new HashMap<String,Object>();
-					for(String fatherColumn:fatherColumns){
-						fatherTotal.put(fatherColumn,item.get(fatherColumn));
+		}
+		if(sons.size()>0 || oneSons.size()>0){
+			List<Map<String,Object>> ret=new ArrayList<Map<String,Object>>();
+			//先处理父元素
+			for(Map<String,Object> item:data){
+				//先构造本条数据
+				Map<String,Object> fatherTotal=new HashMap<String,Object>();
+				for(String fatherColumn:fatherColumns){
+					fatherTotal.put(fatherColumn,item.get(fatherColumn));
+				}
+				
+				//然后构造一个对象的数据
+				for(String oneSon:oneSons){
+					Map<String,Object> oneSonMap=new HashMap<String,Object>();
+					List<String> oneSonColumns=oneSonsColumnsInfo.get(oneSon);
+					for(String oneSonColumn:oneSonColumns){
+						oneSonMap.put(oneSonColumn,item.get(oneSon+formatMapFlag+oneSonColumn));
 					}
-					
-					//然后构造一个对象的数据
-					for(String oneSon:oneSons){
-						Map<String,Object> oneSonMap=new HashMap<String,Object>();
-						List<String> oneSonColumns=oneSonsColumnsInfo.get(oneSon);
-						for(String oneSonColumn:oneSonColumns){
-							oneSonMap.put(oneSonColumn,item.get(oneSon+formatMapFlag+oneSonColumn));
-						}
-						fatherTotal.put(oneSon,oneSonMap);
+					fatherTotal.put(oneSon,oneSonMap);
+				}
+				for(String son:sons){
+					List<String> sonColumns=sonsColumnsInfo.get(son);
+					Map<String,Object> sonData=new HashMap<String,Object>();
+					for(String sonCoulumn:sonColumns){
+						sonData.put(sonCoulumn,item.get(son+formatListFlag+sonCoulumn));
 					}
-					for(String son:sons){
-						List<String> sonColumns=sonsColumnsInfo.get(son);
-						Map<String,Object> sonData=new HashMap<String,Object>();
-						for(String sonCoulumn:sonColumns){
-							sonData.put(sonCoulumn,item.get(son+formatListFlag+sonCoulumn));
-						}
-						fatherTotal.put(son,sonData);
-					}
+					fatherTotal.put(son,sonData);
+				}
+				if(haveSons){
 					//再进行判断和聚合
 					boolean fatherExits=false;
 					Map<String,Object> equalsFather=null;
@@ -273,11 +277,11 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 						}
 						ret.add(fatherTotal);
 					}
+				}else{
+					ret.add(fatherTotal);
 				}
-				return ret;
-			}else{
-				return data;
 			}
+			return ret;
 		}else{
 			return data;
 		}
