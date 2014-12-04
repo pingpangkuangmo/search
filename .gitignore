@@ -40,3 +40,7 @@ target/
 
 #MACOS
 .DS_Store
+
+#eclipse
+.project
+.classpath
