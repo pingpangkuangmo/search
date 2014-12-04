@@ -62,6 +62,10 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 	
 	private final Log logger = LogFactory.getLog(DBSearchService.class);
 	
+	private final static String formatListFlag="@list";
+	
+	private final static String formatMapFlag="@map";
+	
 	@Override
 	public void init() {
 		initLoadAllQueryFile();
@@ -161,13 +165,19 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 			List<String> fatherColumns=new ArrayList<String>();
 			Set<String> sons=new HashSet<String>();
 			Map<String,List<String>> sonsColumnsInfo=new HashMap<String,List<String>>();
+			Set<String> oneSons=new HashSet<String>();
+			Map<String,List<String>> oneSonsColumnsInfo=new HashMap<String,List<String>>();
 			//格式化结构
 			List<String> originColumns=q.getColumns();
 			for(String column:originColumns){
 				if(column.contains("as")){
 					String tmp=column.substring(column.indexOf(" as ")+4).trim();
-					if(tmp.contains("__")){
-						String[] tableAndColumn=tmp.split("__");
+					//去掉as 别名时添加的 ``
+					if(tmp.startsWith("`") && tmp.endsWith("`")){
+						tmp=tmp.substring(1,tmp.length()-1);
+					}
+					if(tmp.contains(formatListFlag)){
+						String[] tableAndColumn=tmp.split(formatListFlag);
 						if(tableAndColumn.length>1){
 							sons.add(tableAndColumn[0]);
 							List<String> sonColumns=sonsColumnsInfo.get(tableAndColumn[0]);
@@ -179,6 +189,19 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 						}else{
 							fatherColumns.add(tmp);
 						}
+					}else if(tmp.contains(formatMapFlag)){
+						String[] tableAndColumn=tmp.split(formatMapFlag);
+						if(tableAndColumn.length>1){
+							oneSons.add(tableAndColumn[0]);
+							List<String> sonColumns=oneSonsColumnsInfo.get(tableAndColumn[0]);
+							if(sonColumns==null){
+								sonColumns=new ArrayList<String>();
+							}
+							sonColumns.add(tableAndColumn[1]);
+							oneSonsColumnsInfo.put(tableAndColumn[0],sonColumns);
+						}else{
+							fatherColumns.add(tmp);
+						}
 					}else{
 						fatherColumns.add(tmp);
 					}
@@ -186,7 +209,7 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 					fatherColumns.add(column.substring(column.indexOf(".")+1));
 				}
 			}
-			if(sons.size()>0){
+			if(sons.size()>0 || oneSons.size()>0){
 				List<Map<String,Object>> ret=new ArrayList<Map<String,Object>>();
 				//先处理父元素
 				for(Map<String,Object> item:data){
@@ -195,11 +218,21 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 					for(String fatherColumn:fatherColumns){
 						fatherTotal.put(fatherColumn,item.get(fatherColumn));
 					}
+					
+					//然后构造一个对象的数据
+					for(String oneSon:oneSons){
+						Map<String,Object> oneSonMap=new HashMap<String,Object>();
+						List<String> oneSonColumns=oneSonsColumnsInfo.get(oneSon);
+						for(String oneSonColumn:oneSonColumns){
+							oneSonMap.put(oneSonColumn,item.get(oneSon+formatMapFlag+oneSonColumn));
+						}
+						fatherTotal.put(oneSon,oneSonMap);
+					}
 					for(String son:sons){
 						List<String> sonColumns=sonsColumnsInfo.get(son);
 						Map<String,Object> sonData=new HashMap<String,Object>();
 						for(String sonCoulumn:sonColumns){
-							sonData.put(sonCoulumn,item.get(son+"__"+sonCoulumn));
+							sonData.put(sonCoulumn,item.get(son+formatListFlag+sonCoulumn));
 						}
 						fatherTotal.put(son,sonData);
 					}
