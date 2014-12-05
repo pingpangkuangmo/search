@@ -27,6 +27,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 
+
+
+
+
 import org.apache.commons.io.monitor.FileAlterationListener;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -39,6 +43,9 @@ import org.springframework.util.StringUtils;
 
 import com.dboper.search.config.Configuration;
 import com.dboper.search.domain.QueryBody;
+import com.dboper.search.format.Formatter;
+import com.dboper.search.format.MapFormatter;
+import com.dboper.search.format.Rule;
 import com.dboper.search.observer.ObserverItem;
 import com.dboper.search.observer.ObserverModule;
 import com.dboper.search.observer.ProcessFileChange;
@@ -66,11 +73,20 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 	
 	private final static String formatMapFlag="@map";
 	
+	private Map<String,Formatter> formattersMap;
+	
 	@Override
 	public void init() {
 		initLoadAllQueryFile();
+		initFormatters();
 		sqlService.init();
 		initObserverModule();
+	}
+
+	private void initFormatters() {
+		formattersMap=new HashMap<String,Formatter>();
+		Formatter mapFormatter=new MapFormatter();
+		formattersMap.put(mapFormatter.getType(),mapFormatter);
 	}
 
 	private void initObserverModule() {
@@ -148,12 +164,36 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 	public List<Map<String,Object>> select(QueryBody q){
 		String sql=sqlService.getSql(q);
 		if(StringUtils.hasLength(sql)){
-			return formatData(config.getJdbcTemplate().queryForList(sql),q);
+			return formatData(formatValue(config.getJdbcTemplate().queryForList(sql),q),q);
 		}else{
 			return new ArrayList<Map<String,Object>>();
 		}
 	}
 	
+	private List<Map<String, Object>> formatValue(List<Map<String, Object>> data, QueryBody q) {
+		List<Rule> rules=q.getFormat();
+		if(rules.size()>0){
+			Map<String,Map<String,Object>> allRulesAndFormatters=new HashMap<String,Map<String,Object>>(); 
+			for(Rule rule:rules){
+				Formatter formatter=formattersMap.get(rule.getRuleType());
+				if(formatter!=null){
+					allRulesAndFormatters.put(rule.getColumn(),MapValueUtil.getMap("rule",rule,"formatter",formatter));
+				}
+			}
+			if(allRulesAndFormatters.size()>0){
+				for(Map<String,Object> dataItem:data){
+					for(String column:allRulesAndFormatters.keySet()){
+						Object value=dataItem.get(column);
+						Formatter formatter=(Formatter) allRulesAndFormatters.get(column).get("formatter");
+						Rule rule=(Rule) allRulesAndFormatters.get(column).get("rule");
+						dataItem.put(column,formatter.format(value,rule.getRuleBody()));
+					}
+				}
+			}
+		}
+		return data;
+	}
+
 	@SuppressWarnings("unchecked")
 	private List<Map<String,Object>> formatData(List<Map<String,Object>> data,QueryBody q){
 		if(data==null || q==null){

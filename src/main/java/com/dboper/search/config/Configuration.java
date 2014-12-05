@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import com.dboper.search.format.Formatter;
 import com.dboper.search.relation.TablesRelationService;
 import com.dboper.search.sqlparams.SqlParamsHandler;
 
@@ -21,6 +22,8 @@ public class Configuration implements TableDBConfig,QueryAndRelationDir{
 	
 	private List<SqlParamsHandler> sqlParamsHandlers;
 	
+	private List<Formatter> formatters;
+	
 	private String queryFileDirectory="query";
 	
 	private String relationDir="relation";
@@ -30,6 +33,14 @@ public class Configuration implements TableDBConfig,QueryAndRelationDir{
 	private boolean monitorRelationFile=false;
 	
 	private boolean monitorModule=false;
+
+	public List<Formatter> getFormatters() {
+		return formatters;
+	}
+
+	public void setFormatters(List<Formatter> formatters) {
+		this.formatters = formatters;
+	}
 
 	public boolean isMonitorModule() {
 		return monitorModule;

@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.dboper.search.format.Rule;
+
 public class QueryBody implements Cloneable{
 
 	private List<String> columns=new ArrayList<String>();;
@@ -14,6 +16,7 @@ public class QueryBody implements Cloneable{
 	private boolean distinct=false;
 	private String action;
 	private List<String> groupColumns=new ArrayList<String>();
+	private List<Rule> format=new ArrayList<Rule>();
 	
 	public QueryBody() {
 		super();
@@ -22,6 +25,14 @@ public class QueryBody implements Cloneable{
 	@Override
 	public QueryBody clone() throws CloneNotSupportedException {
 		return (QueryBody)super.clone();
+	}
+
+	public List<Rule> getFormat() {
+		return format;
+	}
+
+	public void setFormat(List<Rule> format) {
+		this.format = format;
 	}
 
 	public List<String> getGroupColumns() {
