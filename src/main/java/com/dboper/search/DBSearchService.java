@@ -266,13 +266,18 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 								}
 							}
 							if(!exitsSonItem){
-								sonList.add(fatherSon);
+								if(!mapValueEmpty(fatherSon)){
+									sonList.add(fatherSon);
+								}
 							}
 						}
 					}else{
 						for(String son:sons){
 							List<Object> list=new ArrayList<Object>();
-							list.add(fatherTotal.get(son));
+							Map<String,Object> fatherSon=(Map<String, Object>)fatherTotal.get(son);
+							if(!mapValueEmpty(fatherSon)){
+								list.add(fatherSon);
+							}
 							fatherTotal.put(son,list);
 						}
 						ret.add(fatherTotal);
@@ -285,6 +290,18 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 		}else{
 			return data;
 		}
+	}
+	
+	private boolean mapValueEmpty(Map<String,Object> map){
+		if(map==null){
+			return true;
+		}
+		for(String key:map.keySet()){
+			if(map.get(key)!=null){
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	private boolean compareTwoMapEquals(Map<String, Object> fatherTotal,Map<String, Object> alreadyFather, List<String> groupColumns) {
