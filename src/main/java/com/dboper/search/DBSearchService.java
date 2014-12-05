@@ -173,20 +173,29 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 	private List<Map<String, Object>> formatValue(List<Map<String, Object>> data, QueryBody q) {
 		List<Rule> rules=q.getFormat();
 		if(rules.size()>0){
-			Map<String,Map<String,Object>> allRulesAndFormatters=new HashMap<String,Map<String,Object>>(); 
+			Map<String,List<Map<String,Object>>> allRulesAndFormatters=new HashMap<String,List<Map<String,Object>>>(); 
 			for(Rule rule:rules){
 				Formatter formatter=formattersMap.get(rule.getRuleType());
 				if(formatter!=null){
-					allRulesAndFormatters.put(rule.getColumn(),MapValueUtil.getMap("rule",rule,"formatter",formatter));
+					String column=rule.getColumn();
+					List<Map<String,Object>> formatters=allRulesAndFormatters.get(column);
+					if(formatters==null){
+						formatters=new ArrayList<Map<String,Object>>();
+						allRulesAndFormatters.put(column,formatters);
+					}
+					formatters.add(MapValueUtil.getMap("rule",rule,"formatter",formatter));
 				}
 			}
 			if(allRulesAndFormatters.size()>0){
 				for(Map<String,Object> dataItem:data){
 					for(String column:allRulesAndFormatters.keySet()){
 						Object value=dataItem.get(column);
-						Formatter formatter=(Formatter) allRulesAndFormatters.get(column).get("formatter");
-						Rule rule=(Rule) allRulesAndFormatters.get(column).get("rule");
-						dataItem.put(column,formatter.format(value,rule.getRuleBody()));
+						List<Map<String,Object>> formatters=allRulesAndFormatters.get(column);
+						for(Map<String,Object> formatterItem:formatters){
+							Formatter formatter=(Formatter)formatterItem.get("formatter");
+							Rule rule=(Rule)formatterItem.get("rule");
+							dataItem.put(column,formatter.format(value,rule.getRuleBody()));
+						}
 					}
 				}
 			}
