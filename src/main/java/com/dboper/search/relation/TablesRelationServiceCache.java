@@ -38,6 +38,10 @@ public class TablesRelationServiceCache implements Bootstrap{
 		initTablesRelation();
 	}
 	
+	public void refreshTablesRelationFromDB(){
+		initTablesRelationFromDB();
+	}
+	
 	private void registerTablesRelationService() {
 		this.dbTablesRelationService=new TablesRelationDBService(config);
 		tablesRelationServices.add(dbTablesRelationService);

@@ -40,6 +40,10 @@ public class SqlService implements Bootstrap{
 		tablesRelationServiceCache.init();
 	}
 	
+	public void initTablesRelationFromDB(){
+		tablesRelationServiceCache.refreshTablesRelationFromDB();
+	}
+	
 	private void registerSqlParamsHandlers() {
 		sqlParamsHandlers=new ArrayList<SqlParamsHandler>();
 		sqlParamsHandlers.add(new DefaultSqlParamsParser());

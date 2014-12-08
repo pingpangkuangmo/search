@@ -7,11 +7,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import com.dboper.search.format.Formatter;
+import com.dboper.search.observer.ObserverConfig;
 import com.dboper.search.relation.TablesRelationService;
 import com.dboper.search.sqlparams.SqlParamsHandler;
 
 @Service
-public class Configuration implements TableDBConfig,QueryAndRelationDir{
+public class Configuration implements TableDBConfig,ObserverConfig{
 
 	private String tablePrefix="";
 	

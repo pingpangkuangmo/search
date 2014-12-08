@@ -13,6 +13,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
 import com.dboper.search.Bootstrap;
+import com.dboper.search.exception.monitor.MonitorModuleException;
 
 public class ObserverModule implements Bootstrap{
 
@@ -62,6 +63,8 @@ public class ObserverModule implements Bootstrap{
 		FileAlterationMonitor monitor=monitors.get(monitorName);
 		if(monitor!=null){
 			monitor.start();
+		}else{
+			throw new MonitorModuleException("monitorName为"+monitorName+"的monitor不存在");
 		}
 	}
 	
@@ -69,14 +72,14 @@ public class ObserverModule implements Bootstrap{
 		FileAlterationMonitor monitor=monitors.get(monitorName);
 		if(monitor!=null){
 			monitor.stop();
+		}else{
+			throw new MonitorModuleException("monitorName为"+monitorName+"的monitor不存在");
 		}
 	}
 	
 	public void stopAllMonitor() throws Exception{
 		for(String monitorName:monitors.keySet()){
-			FileAlterationMonitor monitor=monitors.get(monitorName);
-			monitor.stop();
+			stop(monitorName);
 		}
 	}
-	
 }

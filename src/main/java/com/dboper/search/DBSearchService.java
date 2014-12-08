@@ -8,30 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import org.apache.commons.io.monitor.FileAlterationListener;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,15 +22,15 @@ import com.dboper.search.domain.QueryBody;
 import com.dboper.search.format.Formatter;
 import com.dboper.search.format.MapFormatter;
 import com.dboper.search.format.Rule;
-import com.dboper.search.observer.ObserverItem;
-import com.dboper.search.observer.ObserverModule;
+import com.dboper.search.observer.ObserverControll;
 import com.dboper.search.observer.ProcessFileChange;
-import com.dboper.search.observer.QueryFileListener;
 import com.dboper.search.util.FileToQueryBodyUtil;
 import com.dboper.search.util.MapValueUtil;
 
 @Service
 public class DBSearchService implements ProcessFileChange,Bootstrap{
+	
+	private final Log logger = LogFactory.getLog(DBSearchService.class);
 
 	@Autowired
 	private Configuration config;
@@ -65,9 +41,7 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 	
 	private Map<String,Map<String,QueryBody>> query_tmp=new HashMap<String,Map<String,QueryBody>>();
 	
-	private ObserverModule observerModule;
-	
-	private final Log logger = LogFactory.getLog(DBSearchService.class);
+	private ObserverControll observerControll;
 	
 	private final static String formatListFlag="@list";
 	
@@ -82,6 +56,10 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 		sqlService.init();
 		initObserverModule();
 	}
+	
+	public void refreshTablesRelationFromDB(){
+		sqlService.initTablesRelationFromDB();
+	}
 
 	private void initFormatters() {
 		formattersMap=new HashMap<String,Formatter>();
@@ -90,60 +68,28 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 	}
 
 	private void initObserverModule() {
-		if(config.isMonitorModule()){
-			startMonitorModule();
-		}
+		observerControll=new ObserverControll(config);
+		observerControll.initObserverModule();
 	}
+	
+	//对外提供的监控方法
 	
 	public void startMonitorModule(){
-		if(observerModule!=null){
-			throw new RuntimeException("monitor module already start");
-		}else{
-			observerModule=new ObserverModule();
-			if(config.isMonitorQueryFile()){
-				observerModule.addObserverItem(getQueryFileObserverItem());
-			}
-			if(config.isMonitorRelationFile()){
-				observerModule.addObserverItem(getRelationFileObserverItem());
-			}
-			observerModule.init();
-			logger.warn("monitor module start");
-		}
+		observerControll.startMonitorModule();
 	}
 	
-	public void stopMonitorModule() throws Exception{
-		if(observerModule!=null){
-			observerModule.stopAllMonitor();
-			observerModule=null;
-			logger.warn("monitor module stop");
-		}else{
-			throw new RuntimeException("monitor module not start");
-		}
+	public void stopMonitorModule(){
+		observerControll.stopMonitorModule();
+	}
+	
+	public void startMonitor(String monitorName) throws Exception{
+		observerControll.startMonitor(monitorName);
+	}
+	
+	public void stopMonitor(String monitorName) throws Exception{
+		observerControll.stopMonitor(monitorName);
 	}
 
-	private ObserverItem getRelationFileObserverItem() {
-		ObserverItem observerItem=new ObserverItem();
-		observerItem.setDir(config.getQueryFileDirectory());
-		observerItem.setInterval(5000L);
-		observerItem.setName("relation");
-		observerItem.setSuffix("json");
-		List<FileAlterationListener> listeners=new ArrayList<FileAlterationListener>();
-		listeners.add(new QueryFileListener(this));
-		observerItem.setListeners(listeners);
-		return observerItem;
-	}
-
-	private ObserverItem getQueryFileObserverItem() {
-		ObserverItem observerItem=new ObserverItem();
-		observerItem.setDir(config.getQueryFileDirectory());
-		observerItem.setInterval(5000L);
-		observerItem.setName("query");
-		observerItem.setSuffix("json");
-		List<FileAlterationListener> listeners=new ArrayList<FileAlterationListener>();
-		listeners.add(new QueryFileListener(this));
-		observerItem.setListeners(listeners);
-		return observerItem;
-	}
 
 	private void initLoadAllQueryFile(){
 		try {
@@ -364,7 +310,7 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 				}
 			}else{
 				if(!value1.equals(value2)){
-					return false;
+					return false; 
 				}
 			}
 		}
@@ -423,24 +369,7 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 		}
 	}
 	
-	public void startMonitor(String monitorName) throws Exception{
-		if(observerModule!=null){
-			observerModule.start(monitorName);
-			logger.warn("monitor->"+monitorName+" start");
-		}else{
-			throw new RuntimeException("monitor module not start");
-		}
-	}
 	
-	public void stopMonitor(String monitorName) throws Exception{
-		if(observerModule!=null){
-			observerModule.stop(monitorName);
-			logger.warn("monitor->"+monitorName+" stop");
-		}else{
-			throw new RuntimeException("monitor module not start");
-		}
-	}
-
 	public ConcurrentHashMap<String, QueryBody> getQuerys() {
 		return querys;
 	}
