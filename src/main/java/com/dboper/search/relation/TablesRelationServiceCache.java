@@ -72,13 +72,24 @@ public class TablesRelationServiceCache implements Bootstrap{
 		for(String column:columns){
 			addTable(column,tables);
 		}
-		if(params!=null && !params.isEmpty()){
-			for(String key:params.keySet()){
-				addTable(key,tables);
-			}
-		}
+		processAndOrTableName(params, tables);
 		Assert.notEmpty(tables);
 		return getTablesRelation(tables,action);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void processAndOrTableName(Map<String, Object> params,List<String> tables){
+		if(params!=null && !params.isEmpty()){
+			for(String key:params.keySet()){
+				if("$and".equals(key) || "$or".equals(key)){
+					Object value=params.get(key);
+					Assert.isInstanceOf(Map.class,value);
+					processAndOrTableName((Map<String, Object>)value,tables);
+				}else{
+					addTable(key,tables);
+				}
+			}
+		}
 	}
 	
 	public String getTablesRelation(List<String> tables,String action) {

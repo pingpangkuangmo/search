@@ -68,7 +68,7 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 	}
 
 	private void initObserverModule() {
-		observerControll=new ObserverControll(config);
+		observerControll=new ObserverControll(config,this);
 		observerControll.initObserverModule();
 	}
 	

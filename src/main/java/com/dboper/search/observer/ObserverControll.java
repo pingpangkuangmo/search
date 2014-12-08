@@ -17,8 +17,9 @@ public class ObserverControll{
 	private ProcessFileChange processFileChange;
 	private final Log logger = LogFactory.getLog(DBSearchService.class);
 	
-	public ObserverControll(ObserverConfig config){
+	public ObserverControll(ObserverConfig config,ProcessFileChange processFileChange){
 		this.config=config;
+		this.processFileChange=processFileChange;
 	}
 	
 	public void initObserverModule() {
