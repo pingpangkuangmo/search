@@ -10,6 +10,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.dboper.search.config.Configuration;
@@ -79,7 +80,7 @@ public class SqlService implements Bootstrap{
 		sql.append(relation);
 		if(params!=null && !params.isEmpty()){
 			sql.append(" where ");
-			sql.append(getParamsByHandlers(params));
+			sql.append(getParamsByHandlers(params,"and"));
 		}
 		String order_by=q.getOrder_by();
 		if(order_by!=null && !order_by.trim().equals("")){
@@ -95,25 +96,51 @@ public class SqlService implements Bootstrap{
 		return sqlStr;
 	}
 
-	private String getParamsByHandlers(Map<String, Object> params) {
+	private String getParamsByHandlers(Map<String, Object> params,String andOr) {
 		StringBuilder sb=new StringBuilder();
+		String andOrOper=" "+andOr+" ";
 		for(String item:params.keySet()){
-			int operIndex=item.lastIndexOf("@");
-			Object value=processStringValue(params.get(item));
-			if(operIndex<0){
-				sb.append(config.getTablePrefix()+item).append("=").append(value).append(" and ");
+			String andOrSql=processAndOr(item,params);
+			if(StringUtils.hasLength(andOrSql)){
+				sb.append(andOrSql).append(andOrOper);
 			}else{
-				String key=item.substring(0,operIndex);
-				String oper=item.substring(operIndex+1);
-				String itemParams=handleKeyValue(config.getTablePrefix()+key,value,oper);
-				if(!itemParams.equals("")){
-					sb.append(itemParams).append(" and ");
+				int operIndex=item.lastIndexOf("@");
+				Object value=processStringValue(params.get(item));
+				if(operIndex<0){
+					sb.append(config.getTablePrefix()+item).append("=").append(value).append(andOrOper);
+				}else{
+					String key=item.substring(0,operIndex);
+					String oper=item.substring(operIndex+1);
+					String itemParams=handleKeyValue(config.getTablePrefix()+key,value,oper);
+					if(!itemParams.equals("")){
+						sb.append(itemParams).append(andOrOper);
+					}
 				}
 			}
 		}
 		int length=sb.length();
-		sb=sb.delete(length-4,length);
+		sb=sb.delete(length-andOr.length()-1,length);
 		return sb.toString();
+	}
+
+	@SuppressWarnings("unchecked")
+	private String processAndOr(String item, Map<String, Object> params) {
+		String andOr=""; 
+		if("$and".equals(item)){
+			andOr="and";
+		}else if("$or".equals(item)){
+			andOr="or";
+		}
+		if(StringUtils.hasLength(andOr)){
+			Object value=params.get(item);
+			Assert.notNull(value,"对于and和or操作，value不能为空");
+			Assert.isInstanceOf(Map.class,value,"对于and和or操作，value必须为Map结构");
+			String andOrSQL=getParamsByHandlers((Map<String,Object>)value,andOr);
+			if(StringUtils.hasLength(andOrSQL)){
+				return "( "+andOrSQL+" )";
+			}
+		}
+		return "";
 	}
 
 	private String handleKeyValue(String key, Object value, String oper) {
