@@ -30,6 +30,8 @@ public class TablesRelationServiceCache implements Bootstrap{
 	
 	private TablesRelationDBService dbTablesRelationService;
 	
+	private TablesRelationPropertyService tablesRelationPropertyService;
+	
 	private final Log logger = LogFactory.getLog(getClass());
 	
 	@Override
@@ -44,6 +46,7 @@ public class TablesRelationServiceCache implements Bootstrap{
 	
 	private void registerTablesRelationService() {
 		this.dbTablesRelationService=new TablesRelationDBService(config);
+		this.tablesRelationPropertyService=new TablesRelationPropertyService(config);
 		tablesRelationServices.add(dbTablesRelationService);
 		if(config.getTablesRelationServices()!=null){
 			tablesRelationServices.addAll(config.getTablesRelationServices());
@@ -52,22 +55,31 @@ public class TablesRelationServiceCache implements Bootstrap{
 
 	private void initTablesRelation() {
 		initTablesRelationFromDB();
-		initTablesRelationFromJsonFile();
+		initBaseTablesRelationFromProperties();
 	}
 
-	private void initTablesRelationFromJsonFile() {
-		
+	
+
+	private void initBaseTablesRelationFromProperties() {
+		this.tablesRelationPropertyService.init();
 	}
 
 	private void initTablesRelationFromDB() {
 		tablesRelationCache.putAll(dbTablesRelationService.selectAll());
 	}
 
-	public String getTablesRelation(List<String> columns,Map<String, Object> params) {
-		return getTablesRelation(columns, params,null);
+	public String getTablesRelation(List<String> columns,Map<String, Object> params,String tablePath) {
+		return getTablesRelation(columns,params,null,null);
 	}
 	
-	public String getTablesRelation(List<String> columns,Map<String, Object> params,String action) {
+	public String getTablesRelation(List<String> columns,Map<String, Object> params,String action,String tablePath) {
+		String relation="";
+		if(StringUtils.hasLength(tablePath)){
+			relation=this.tablesRelationPropertyService.getRelation(tablePath);
+		}
+		if(StringUtils.hasLength(relation)){
+			return relation;
+		}
 		List<String> tables=new ArrayList<String>();
 		for(String column:columns){
 			addTable(column,tables);

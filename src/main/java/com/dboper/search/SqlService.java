@@ -63,7 +63,7 @@ public class SqlService implements Bootstrap{
 		String tablePrefix=config.getTablePrefix();
 		List<String> columns=q.getColumns();
 		Map<String,Object> params=q.getParams();
-		String relation=tablesRelationServiceCache.getTablesRelation(columns,params,q.getAction());
+		String relation=tablesRelationServiceCache.getTablesRelation(columns,params,q.getAction(),q.getTablesPath());
 		if(!StringUtils.hasLength(relation)){
 			return "";
 		}

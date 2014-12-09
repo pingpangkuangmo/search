@@ -24,7 +24,7 @@ import com.dboper.search.format.MapFormatter;
 import com.dboper.search.format.Rule;
 import com.dboper.search.observer.ObserverControll;
 import com.dboper.search.observer.ProcessFileChange;
-import com.dboper.search.util.FileToQueryBodyUtil;
+import com.dboper.search.util.FileUtil;
 import com.dboper.search.util.MapValueUtil;
 
 @Service
@@ -97,7 +97,7 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 			Resource[] resources = resolver.getResources("classpath*:"+config.getQueryFileDirectory()+"/*.json");  
 			if(resources!=null){
 				for(Resource resource:resources){
-					Map<String,QueryBody> fileQueryBody=FileToQueryBodyUtil.getQueryBodyFromFile(resource.getInputStream());
+					Map<String,QueryBody> fileQueryBody=FileUtil.getQueryBodyFromFile(resource.getInputStream());
 					query_tmp.put(resource.getFile().getName(),fileQueryBody);
 					querys.putAll(fileQueryBody);
 				}

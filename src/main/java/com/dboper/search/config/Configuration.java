@@ -12,7 +12,7 @@ import com.dboper.search.relation.TablesRelationService;
 import com.dboper.search.sqlparams.SqlParamsHandler;
 
 @Service
-public class Configuration implements TableDBConfig,ObserverConfig{
+public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTablesRelationConfig{
 
 	private String tablePrefix="";
 	
@@ -34,6 +34,9 @@ public class Configuration implements TableDBConfig,ObserverConfig{
 	private boolean monitorRelationFile=false;
 	
 	private boolean monitorModule=false;
+	
+	private String baseTwoTablesRelation="baseRelation";
+	
 
 	public List<Formatter> getFormatters() {
 		return formatters;
@@ -114,6 +117,15 @@ public class Configuration implements TableDBConfig,ObserverConfig{
 
 	public void setSqlParamsHandlers(List<SqlParamsHandler> sqlParamsHandlers) {
 		this.sqlParamsHandlers = sqlParamsHandlers;
+	}
+
+	@Override
+	public String getBaseTwoTablesRelation() {
+		return baseTwoTablesRelation;
+	}
+
+	public void setBaseTwoTablesRelation(String baseTwoTablesRelation) {
+		this.baseTwoTablesRelation = baseTwoTablesRelation;
 	}
 	
 }

@@ -14,16 +14,10 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class FileToQueryBodyUtil {
+public class FileUtil {
 
 	public static Map<String,QueryBody> getQueryBodyFromFile(File file){
-		InputStream in=null;
-		try {
-			in = new FileInputStream(file);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-		return getQueryBodyFromFile(in);
+		return getQueryBodyFromFile(getInputStream(file));
 	}
 	
 	public static Map<String,QueryBody> getQueryBodyFromFile(InputStream in){
@@ -45,5 +39,15 @@ public class FileToQueryBodyUtil {
 			e.printStackTrace();
 		}
 		return ret;
+	}
+	
+	private static InputStream getInputStream(File file){
+		InputStream in=null;
+		try {
+			in = new FileInputStream(file);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		return in;
 	}
 }

@@ -3,7 +3,7 @@ package com.dboper.search.observer;
 import java.io.File;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 
-import com.dboper.search.util.FileToQueryBodyUtil;
+import com.dboper.search.util.FileUtil;
 
 public class QueryFileListener extends FileAlterationListenerAdaptor{
 	
@@ -16,7 +16,7 @@ public class QueryFileListener extends FileAlterationListenerAdaptor{
 
 	@Override
 	public void onFileChange(File file) {
-		processFileChange.processChange(FileToQueryBodyUtil.getQueryBodyFromFile(file),file.getName());
+		processFileChange.processChange(FileUtil.getQueryBodyFromFile(file),file.getName());
 	}
 
 	public ProcessFileChange getProcessFileChange() {

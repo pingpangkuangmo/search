@@ -17,6 +17,7 @@ public class QueryBody implements Cloneable{
 	private String action;
 	private List<String> groupColumns=new ArrayList<String>();
 	private List<Rule> format=new ArrayList<Rule>();
+	private String tablesPath;
 	
 	public QueryBody() {
 		super();
@@ -25,6 +26,14 @@ public class QueryBody implements Cloneable{
 	@Override
 	public QueryBody clone() throws CloneNotSupportedException {
 		return (QueryBody)super.clone();
+	}
+
+	public String getTablesPath() {
+		return tablesPath;
+	}
+
+	public void setTablesPath(String tablesPath) {
+		this.tablesPath = tablesPath;
 	}
 
 	public List<Rule> getFormat() {
