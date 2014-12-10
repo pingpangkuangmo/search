@@ -1,8 +1,8 @@
-package com.dboper.search.format;
+package com.dboper.search.format.value;
 
 import java.util.Map;
 
-public interface Formatter {
+public interface ValueFormatter {
 
 	public String getType();
 	

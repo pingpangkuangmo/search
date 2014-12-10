@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.dboper.search.util.MapValueUtil.*;
+import static com.dboper.search.util.MapUtil.*;
 
 import com.dboper.search.config.TableDBConfig;
 

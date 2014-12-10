@@ -1,8 +1,8 @@
-package com.dboper.search.format;
+package com.dboper.search.format.value;
 
 import java.util.Map;
 
-public class Rule {
+public class ValueFormatterRule {
 
 	private String ruleType;
 	private String column;

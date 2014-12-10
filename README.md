@@ -11,3 +11,10 @@ search
 
 4 对于查询可以直接指定表之间的连接路径，如 organization join organization_product_lines join product_line
 
+改进：
+
+1 画出整体流程，分清责任机制，该扩展扩展
+
+2 集成问题：xml配置文件、编码配置
+
+3 对功能1进行优化，使其变得可扩展

@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.dboper.search.format.Rule;
+import com.dboper.search.format.value.ValueFormatterRule;
 
 public class QueryBody implements Cloneable{
 
@@ -16,7 +16,7 @@ public class QueryBody implements Cloneable{
 	private boolean distinct=false;
 	private String action;
 	private List<String> groupColumns=new ArrayList<String>();
-	private List<Rule> format=new ArrayList<Rule>();
+	private List<ValueFormatterRule> format=new ArrayList<ValueFormatterRule>();
 	private String tablesPath;
 	
 	public QueryBody() {
@@ -36,11 +36,11 @@ public class QueryBody implements Cloneable{
 		this.tablesPath = tablesPath;
 	}
 
-	public List<Rule> getFormat() {
+	public List<ValueFormatterRule> getFormat() {
 		return format;
 	}
 
-	public void setFormat(List<Rule> format) {
+	public void setFormat(List<ValueFormatterRule> format) {
 		this.format = format;
 	}
 

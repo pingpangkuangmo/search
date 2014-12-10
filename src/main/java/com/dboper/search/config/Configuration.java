@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import com.dboper.search.format.Formatter;
+import com.dboper.search.format.value.ValueFormatter;
 import com.dboper.search.observer.ObserverConfig;
 import com.dboper.search.relation.TablesRelationService;
 import com.dboper.search.sqlparams.SqlParamsHandler;
@@ -23,7 +23,7 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	
 	private List<SqlParamsHandler> sqlParamsHandlers;
 	
-	private List<Formatter> formatters;
+	private List<ValueFormatter> formatters;
 	
 	private String queryFileDirectory="query";
 	
@@ -38,11 +38,11 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	private String baseTwoTablesRelation="baseRelation";
 	
 
-	public List<Formatter> getFormatters() {
+	public List<ValueFormatter> getFormatters() {
 		return formatters;
 	}
 
-	public void setFormatters(List<Formatter> formatters) {
+	public void setFormatters(List<ValueFormatter> formatters) {
 		this.formatters = formatters;
 	}
 

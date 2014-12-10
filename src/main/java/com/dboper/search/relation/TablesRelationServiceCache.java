@@ -15,7 +15,7 @@ import org.springframework.util.StringUtils;
 
 import com.dboper.search.Bootstrap;
 import com.dboper.search.config.Configuration;
-import com.dboper.search.util.MapValueUtil;
+import com.dboper.search.util.MapUtil;
 import com.dboper.search.util.TablesRelationUtil;
 
 @Service
@@ -149,7 +149,7 @@ public class TablesRelationServiceCache implements Bootstrap{
 			for(TablesRelationService tablesRelationService:tablesRelationServices){
 				relation=tablesRelationService.getTablesRelation(tablesStr,action);
 				if(StringUtils.hasLength(relation)){
-					Map<String,Object> relationItem=MapValueUtil.getMap("target",action,"relation",relation);
+					Map<String,Object> relationItem=MapUtil.getMap("target",action,"relation",relation);
 					relations.add(relationItem);
 					tablesRelationCache.put(tablesStr,relations);
 					insertToDB(tablesStr,relation,action);

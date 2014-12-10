@@ -1,8 +1,8 @@
-package com.dboper.search.format;
+package com.dboper.search.format.value;
 
 import java.util.Map;
 
-public class MapFormatter implements Formatter{
+public class MapValueFormatter implements ValueFormatter{
 
 	@Override
 	public Object format(Object value, Map<Object, Object> formatRule) {

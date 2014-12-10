@@ -1,8 +1,8 @@
-package com.dboper.search.format;
+package com.dboper.search.format.value;
 
 import java.util.Map;
 
-public class RegexFormatter implements Formatter{
+public class RegexValueFormatter implements ValueFormatter{
 
 	@Override
 	public String getType() {
