@@ -94,7 +94,7 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 		Map<String,HashMap<String,Object>> contexts=prepareContexts(q);
 		List<Map<String,Object>> ret=new ArrayList<Map<String,Object>>();
 		for(Map<String,Object> dataItem:data){
-			Map<String,Object> dataItemResult=processPerData(dataItem,data,contexts,q);
+			Map<String,Object> dataItemResult=processPerData(dataItem,ret,contexts,q);
 			if(dataItemResult!=null){
 				ret.add(dataItemResult);
 			}
@@ -104,13 +104,13 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private Map<String, Object> processPerData(Map<String, Object> dataItem,List<Map<String, Object>> data,
+	private Map<String, Object> processPerData(Map<String, Object> dataItem,List<Map<String, Object>> dataToReturn,
 			Map<String, HashMap<String, Object>> contexts, QueryBody q) {
 		Map<String,Object> ret=dataItem;
 		for(ProcessUnit processUnit:processUnits){
 			HashMap<String, Object> context=contexts.get(processUnit.getName());
 			if(context!=null){
-				ret=processUnit.processLineData(dataItem,ret,data,context);
+				ret=processUnit.processLineData(dataItem,ret,dataToReturn,context);
 			}
 		}
 		return ret;

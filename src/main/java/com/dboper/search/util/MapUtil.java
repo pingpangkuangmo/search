@@ -32,7 +32,7 @@ public class MapUtil {
 	}
 	
 	public static boolean mapValueEmpty(Map<String,Object> map){
-		if(map==null){
+		if(map==null || map.size()<1){
 			return true;
 		}
 		for(String key:map.keySet()){
@@ -62,6 +62,9 @@ public class MapUtil {
 	}
 
 	public static boolean compareMapEquals(Map<String,Object> map1,Map<String,Object> map2){
+		if(map1==null || map1.size()<1){
+			return false;
+		}
 		for(String key:map1.keySet()){
 			Object value1=map1.get(key);
 			Object value2=map2.get(key);

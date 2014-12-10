@@ -38,7 +38,9 @@ public class ListFormFormatter implements FormFormatter{
 			for(String objName:objNames){
 				Map<String,Object> obj=(Map<String, Object>)fatherTotal.get(objName);
 				List<Map<String,Object>> objs=new ArrayList<Map<String,Object>>();
-				objs.add(obj);
+				if(!MapUtil.mapValueEmpty(obj)){
+					objs.add(obj);
+				}
 				fatherTotal.put(objName,objs);
 			}
 			return fatherTotal;
