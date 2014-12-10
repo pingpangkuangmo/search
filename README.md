@@ -22,7 +22,8 @@ search
 功能：
 （1） 多个表字段名重复时可以指定别名 如 "app.name as appName"
 （2）同时可以指定返回结果为一对一的关系，即如下形式，外层是app的内容，app中含有一个product
-		{
+       <pre><code>
+       	{
             "status": "正常",
             "id": 15423,
             "english_name": "toolmon",
@@ -35,16 +36,19 @@ search
                 "name": "sefsd",
             }
         }
+	</code></pre>
     columns的写法为：
+    <pre><code>
     [ 
     	"app.id","app.english_name","status.name as status",
 	    "product.name as `product@mapname`","product.english_name as `product@mapenglishName`",
 	    "product_line.name as `productLine@mapname`","product_line.english_name as `productLine@mapenglishName`"
     ]
+    </code></pre>
     
-          以  product.name as `product@mapname` 为例，product.name起别名为`product@mapname`（一定要加上``，注意不是单引号），@map前面表示该字段为product属性的一部分
+       <pre>  以  product.name as `product@mapname` 为例，product.name起别名为`product@mapname`（一定要加上``，注意不是单引号），@map前面表示该字段为product属性的一部分
          后面表示在product属性中显示的名称。所以在结果中会有product属性中含有name属性。同理product.english_name as `product@mapenglishName`则表示在product属性中
-         会有一个englishName属性。对于productLine同理
+         会有一个englishName属性。对于productLine同理</pre>
          
 （3）可以指定一对多的关系，如下形式，外层是organization信息，每个organization含有一个product_line list集合
    		{
