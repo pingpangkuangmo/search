@@ -7,19 +7,68 @@ import java.util.Map;
 import java.util.Set;
 
 import com.dboper.search.domain.QueryBody;
+import com.dboper.search.format.ProcessUnit;
 
-public class UnionFormFormatter{
+public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 	
 	private List<FormFormatter> formatters;
 	
 	private static final String FATHER="fatherFormatter";
 	private static final String FATHER_OBJ="father";
+	private static final String NAME="formFormatter";
 	
 	public UnionFormFormatter(){
 		formatters=new ArrayList<FormFormatter>();
 		formatters.add(new ListFormFormatter());
 		formatters.add(new MapFormFormatter());
 	}
+	
+	@Override
+	public String getName() {
+		return NAME;
+	}
+	
+	@Override
+	public FormFormatterContext prepareContext(QueryBody q) {
+		List<String> columns=q.getColumns();
+		List<FormFormatter> containsFormFormatters=getContainsFormFormatters(columns);
+		if(containsFormFormatters.size()>0){
+			Map<String,ColumnsFormatBody> columnsInfo=collectColumnsInfo(containsFormFormatters,columns);
+			FormFormatterContext context=new FormFormatterContext();
+			context.setColumnsInfo(columnsInfo);
+			context.setContainsFormFormatters(containsFormFormatters);
+			context.setQ(q);
+			return context;
+		}
+		return null;
+	}
+	
+	@Override
+	public Map<String, Object> processLineData(Map<String, Object> data,Map<String,Object> ret,List<Map<String,Object>> allRets,FormFormatterContext context) {
+		//数据值已经格式化了，只对ret进行处理
+		Map<String, ColumnsFormatBody> columnsInfo=context.getColumnsInfo();
+		List<FormFormatter> containsFormFormatters=context.getContainsFormFormatters();
+		QueryBody q=context.getQ();
+		//先构造父元素
+		List<String> fatherColumns=columnsInfo.get(FATHER).getObjColumns(FATHER_OBJ);
+		Map<String,Object> fatherTotal=new HashMap<String,Object>();
+		for(String column:fatherColumns){
+			fatherTotal.put(column,ret.get(column));
+		}
+		//处理其他formatter，交给具体的formatter来处理，然后设置进父元素中
+		for(FormFormatter formatter:containsFormFormatters){
+			ColumnsFormatBody columnsFormatBody=columnsInfo.get(formatter.getFormatterType());
+			initObj(ret,fatherTotal,columnsFormatBody,formatter);
+			fatherTotal=formatter.fromat(ret,fatherTotal,allRets,columnsFormatBody,q);
+			//fatherTotal==null 表示会聚合到已有的fatherTotal中，不需要再新添加
+			if(fatherTotal==null){
+				break;
+			}
+		}
+		return fatherTotal;
+	}
+
+	
 	
 	public List<Map<String,Object>> format(List<Map<String,Object>> data,QueryBody q){
 		List<Map<String,Object>> ret=new ArrayList<Map<String,Object>>();
@@ -29,7 +78,7 @@ public class UnionFormFormatter{
 		}
 		List<FormFormatter> containsFormFormatters=getContainsFormFormatters(columns);
 		if(containsFormFormatters.size()<1){
-			return ret;
+			return data;
 		}
 		ret=new ArrayList<Map<String,Object>>(data.size());
 		Map<String,ColumnsFormatBody> columnsInfo=collectColumnsInfo(containsFormFormatters,columns);
@@ -104,10 +153,10 @@ public class UnionFormFormatter{
 					}
 				}
 				if(!hasFormatter){
-					fatherColumns.add(column);
+					fatherColumns.add(tmp);
 				}
 			}else{
-				fatherColumns.add(column);
+				fatherColumns.add(column.substring(column.indexOf(".")+1));
 			}
 		}
 		return columnsInfo;
@@ -143,5 +192,8 @@ public class UnionFormFormatter{
 			this.formatters.add(formatter);
 		}
 	}
+
+	
+
 	
 }

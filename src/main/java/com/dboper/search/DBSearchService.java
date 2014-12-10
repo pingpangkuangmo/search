@@ -18,6 +18,7 @@ import org.springframework.util.StringUtils;
 
 import com.dboper.search.config.Configuration;
 import com.dboper.search.domain.QueryBody;
+import com.dboper.search.format.ProcessUnit;
 import com.dboper.search.format.form.UnionFormFormatter;
 import com.dboper.search.format.value.UnionValueFormatter;
 import com.dboper.search.observer.ObserverControll;
@@ -40,18 +41,17 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 	
 	private ObserverControll observerControll;
 	
-	private UnionValueFormatter unionValueFormatter;
-	
-	private UnionFormFormatter unionFormFormatter;
+	private List<ProcessUnit<? extends HashMap<String,Object>>> processUnits;
 	
 	@Override
 	public void init() {
 		initLoadAllQueryFile();
-		initFormatters();
+		initProcessUnits();
 		sqlService.init();
 		initObserverModule();
 	}
 	
+
 	public void refreshTablesRelationFromDB(){
 		sqlService.initTablesRelationFromDB();
 	}
@@ -77,12 +77,55 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 	public List<Map<String,Object>> select(QueryBody q){
 		String sql=sqlService.getSql(q);
 		if(StringUtils.hasLength(sql)){
-			return unionFormFormatter.format(unionValueFormatter.formatValue(config.getJdbcTemplate().queryForList(sql),q),q);
+			long sqlSatrtTime=System.currentTimeMillis();
+			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql);
+			long sqlEndTime=System.currentTimeMillis();
+			logger.warn("sql查询花费了:"+(sqlEndTime-sqlSatrtTime)+" ms");
+			data=processData(data,q);
+			long fromatEndTime=System.currentTimeMillis();
+			logger.warn("格式化花费了:"+(fromatEndTime-sqlEndTime)+" ms");
+			return data;
 		}else{
 			return new ArrayList<Map<String,Object>>();
 		}
 	}
 	
+	private List<Map<String, Object>> processData(List<Map<String, Object>> data, QueryBody q) {
+		Map<String,HashMap<String,Object>> contexts=prepareContexts(q);
+		List<Map<String,Object>> ret=new ArrayList<Map<String,Object>>();
+		for(Map<String,Object> dataItem:data){
+			Map<String,Object> dataItemResult=processPerData(dataItem,data,contexts,q);
+			if(dataItemResult!=null){
+				ret.add(dataItemResult);
+			}
+		}
+		return ret;
+	}
+
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private Map<String, Object> processPerData(Map<String, Object> dataItem,List<Map<String, Object>> data,
+			Map<String, HashMap<String, Object>> contexts, QueryBody q) {
+		Map<String,Object> ret=dataItem;
+		for(ProcessUnit processUnit:processUnits){
+			HashMap<String, Object> context=contexts.get(processUnit.getName());
+			if(context!=null){
+				ret=processUnit.processLineData(dataItem,ret,data,context);
+			}
+		}
+		return ret;
+	}
+
+	private Map<String, HashMap<String, Object>> prepareContexts(QueryBody q) {
+		Map<String,HashMap<String,Object>> contexts=new HashMap<String,HashMap<String,Object>>();
+		for(ProcessUnit<?> processUnit:processUnits){
+			HashMap<String,Object> context=processUnit.prepareContext(q);
+			contexts.put(processUnit.getName(),context);   
+		}
+		return contexts;
+	}
+
+
 	public Map<String,Object> selectOne(QueryBody q){
 		return select(q).get(0);
 	}
@@ -151,9 +194,10 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 		}
 	}
 	
-	private void initFormatters() {
-		unionValueFormatter=new UnionValueFormatter();
-		unionFormFormatter=new UnionFormFormatter();
+	private void initProcessUnits() {
+		processUnits=new ArrayList<ProcessUnit<? extends HashMap<String,Object>>>();
+		processUnits.add(new UnionValueFormatter());
+		processUnits.add(new UnionFormFormatter());
 	}
 
 	private void initObserverModule() {

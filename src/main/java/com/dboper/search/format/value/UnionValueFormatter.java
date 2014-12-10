@@ -6,15 +6,17 @@ import java.util.List;
 import java.util.Map;
 
 import com.dboper.search.domain.QueryBody;
+import com.dboper.search.format.ProcessUnit;
 import com.dboper.search.util.MapUtil;
 
 
-public class UnionValueFormatter {
+public class UnionValueFormatter implements ProcessUnit<ValueFormatterContext>{
 
 	private Map<String,ValueFormatter> formattersMap;
 	
 	private static final String RULE="rule";
 	private static final String FORMATTER="formatter";
+	private static final String NAME="valueFormatter";
 	
 	public UnionValueFormatter(){
 		formattersMap=new HashMap<String,ValueFormatter>();
@@ -24,7 +26,13 @@ public class UnionValueFormatter {
 		formattersMap.put(regexValueFormatter.getType(),regexValueFormatter);
 	}
 	
-	public List<Map<String, Object>> formatValue(List<Map<String, Object>> data, QueryBody q) {
+	@Override
+	public String getName() {
+		return NAME;
+	}
+	
+	@Override
+	public ValueFormatterContext prepareContext(QueryBody q) {
 		List<ValueFormatterRule> rules=q.getFormat();
 		if(rules.size()>0){
 			//先找出涉及到哪些 ValueFormatter
@@ -41,20 +49,27 @@ public class UnionValueFormatter {
 					formatters.add(MapUtil.getMap(RULE,rule,FORMATTER,formatter));
 				}
 			}
-			if(allRulesAndFormatters.size()>0){
-				for(Map<String,Object> dataItem:data){
-					for(String column:allRulesAndFormatters.keySet()){
-						Object value=dataItem.get(column);
-						List<Map<String,Object>> formatters=allRulesAndFormatters.get(column);
-						for(Map<String,Object> formatterItem:formatters){
-							ValueFormatter formatter=(ValueFormatter)formatterItem.get(FORMATTER);
-							ValueFormatterRule rule=(ValueFormatterRule)formatterItem.get(RULE);
-							dataItem.put(column,formatter.format(value,rule.getRuleBody()));
-						}
-					}
-				}
+			if(allRulesAndFormatters.size()>1){
+				ValueFormatterContext context=new ValueFormatterContext();
+				context.setAllRulesAndFormatters(allRulesAndFormatters);
+				return context;
 			}
 		}
-		return data;
+		return null;
+	}
+	
+	@Override
+	public Map<String, Object> processLineData(Map<String, Object> data,Map<String,Object> ret,List<Map<String,Object>> allRets,ValueFormatterContext context) {
+		Map<String,List<Map<String,Object>>> allRulesAndFormatters=context.getAllRulesAndFormatters();
+		for(String column:allRulesAndFormatters.keySet()){
+			Object value=data.get(column);
+			List<Map<String,Object>> formatters=allRulesAndFormatters.get(column);
+			for(Map<String,Object> formatterItem:formatters){
+				ValueFormatter formatter=(ValueFormatter)formatterItem.get(FORMATTER);
+				ValueFormatterRule rule=(ValueFormatterRule)formatterItem.get(RULE);
+				ret.put(column,formatter.format(value,rule.getRuleBody()));
+			}
+		}
+		return ret;
 	}
 }
