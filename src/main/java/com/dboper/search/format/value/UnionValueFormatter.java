@@ -49,7 +49,7 @@ public class UnionValueFormatter implements ProcessUnit<ValueFormatterContext>{
 					formatters.add(MapUtil.getMap(RULE,rule,FORMATTER,formatter));
 				}
 			}
-			if(allRulesAndFormatters.size()>1){
+			if(allRulesAndFormatters.size()>0){
 				ValueFormatterContext context=new ValueFormatterContext();
 				context.setAllRulesAndFormatters(allRulesAndFormatters);
 				return context;
@@ -67,7 +67,8 @@ public class UnionValueFormatter implements ProcessUnit<ValueFormatterContext>{
 			for(Map<String,Object> formatterItem:formatters){
 				ValueFormatter formatter=(ValueFormatter)formatterItem.get(FORMATTER);
 				ValueFormatterRule rule=(ValueFormatterRule)formatterItem.get(RULE);
-				ret.put(column,formatter.format(value,rule.getRuleBody()));
+				value=formatter.format(value,rule.getRuleBody());
+				ret.put(column,value);
 			}
 		}
 		return ret;
