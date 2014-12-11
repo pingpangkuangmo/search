@@ -1,12 +1,19 @@
 package com.dboper.search.util;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.springframework.util.StringUtils;
 
 import com.dboper.search.domain.ActionQueryBody;
 import com.dboper.search.domain.QueryBody;
@@ -39,6 +46,35 @@ public class FileUtil {
 			e.printStackTrace();
 		}
 		return ret;
+	}
+	
+	public static Map<String,String> getTablesRelation(File file){
+		Map<String, String> ret=new HashMap<String,String>();
+		try {
+			BufferedReader bufferedReader=new BufferedReader(new FileReader(file));
+			String lineStr=bufferedReader.readLine();
+			while(StringUtils.hasLength(lineStr)){
+				parseLine(lineStr,ret);
+				lineStr=bufferedReader.readLine();
+			}
+			bufferedReader.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return ret;
+	}
+	
+	private static void parseLine(String lineStr,Map<String,String> ret) {
+		String[] parts=lineStr.split(",");
+		if(parts.length==3){
+			List<String> tables=new ArrayList<String>();
+			tables.add(parts[0]);
+			tables.add(parts[1]);
+			Collections.sort(tables);
+			ret.put(tables.get(0)+"__"+tables.get(1),parts[2]);
+		}
 	}
 	
 	private static InputStream getInputStream(File file){

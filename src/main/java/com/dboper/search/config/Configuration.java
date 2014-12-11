@@ -29,15 +29,16 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	
 	private String relationDir="relation";
 	
+	private String baseRelationFilesDir="baseRelation";
+	
 	private boolean monitorQueryFile=false;
 	
 	private boolean monitorRelationFile=false;
 	
 	private boolean monitorModule=false;
 	
-	private String baseTwoTablesRelation="baseRelation";
+	private boolean monitorBaseRelationFiles=false;
 	
-
 	public List<ValueFormatter> getFormatters() {
 		return formatters;
 	}
@@ -119,13 +120,25 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 		this.sqlParamsHandlers = sqlParamsHandlers;
 	}
 
-	@Override
-	public String getBaseTwoTablesRelation() {
-		return baseTwoTablesRelation;
+	public String getBaseRelationFilesDir() {
+		return baseRelationFilesDir;
 	}
 
-	public void setBaseTwoTablesRelation(String baseTwoTablesRelation) {
-		this.baseTwoTablesRelation = baseTwoTablesRelation;
+	public void setBaseRelationFilesDir(String baseRelationFilesDir) {
+		this.baseRelationFilesDir = baseRelationFilesDir;
+	}
+
+	public boolean isMonitorBaseRelationFiles() {
+		return monitorBaseRelationFiles;
+	}
+
+	public void setMonitorBaseRelationFiles(boolean monitorBaseRelationFiles) {
+		this.monitorBaseRelationFiles = monitorBaseRelationFiles;
+	}
+
+	@Override
+	public String getBaseTwoTablesRelation() {
+		return baseRelationFilesDir;
 	}
 	
 }

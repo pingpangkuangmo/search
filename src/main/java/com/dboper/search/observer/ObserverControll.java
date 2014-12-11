@@ -14,10 +14,10 @@ public class ObserverControll{
 
 	private ObserverConfig config;
 	private ObserverModule observerModule;
-	private ProcessFileChange processFileChange;
+	private ProcessQueryFileChange processFileChange;
 	private final Log logger = LogFactory.getLog(DBSearchService.class);
 	
-	public ObserverControll(ObserverConfig config,ProcessFileChange processFileChange){
+	public ObserverControll(ObserverConfig config,ProcessQueryFileChange processFileChange){
 		this.config=config;
 		this.processFileChange=processFileChange;
 	}
@@ -39,12 +39,27 @@ public class ObserverControll{
 			if(config.isMonitorRelationFile()){
 				observerModule.addObserverItem(getRelationFileObserverItem());
 			}
+			if(config.isMonitorBaseRelationFiles()){
+				observerModule.addObserverItem(getBaseRelationObserverItem());
+			}
 			observerModule.init();
 			logger.warn("monitor module start");
 		}
 	}
 	
 	
+	private ObserverItem getBaseRelationObserverItem() {
+		ObserverItem observerItem=new ObserverItem();
+		observerItem.setDir(config.getBaseRelationFilesDir());
+		observerItem.setInterval(5000L);
+		observerItem.setName("baseRelation");
+		observerItem.setSuffix("json");
+		List<FileAlterationListener> listeners=new ArrayList<FileAlterationListener>();
+		//listeners.add(new BaseRelationListener(baseRelationProcess));
+		observerItem.setListeners(listeners);
+		return observerItem;
+	}
+
 	public void stopMonitorModule(){
 		if(observerModule!=null){
 			try {
@@ -103,11 +118,11 @@ public class ObserverControll{
 		return observerItem;
 	}
 
-	public ProcessFileChange getProcessFileChange() {
+	public ProcessQueryFileChange getProcessFileChange() {
 		return processFileChange;
 	}
 
-	public void setProcessFileChange(ProcessFileChange processFileChange) {
+	public void setProcessFileChange(ProcessQueryFileChange processFileChange) {
 		this.processFileChange = processFileChange;
 	}
 }

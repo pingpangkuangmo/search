@@ -78,8 +78,10 @@ public class TablesRelationServiceCache implements Bootstrap{
 			relation=this.tablesRelationPropertyService.getRelation(tablePath);
 		}
 		if(StringUtils.hasLength(relation)){
+			logger.warn("使用了tablesPath来寻找表之间的连接关系："+relation);
 			return relation;
 		}
+		logger.warn("tablesPath没有找到连接关系，使用了columns和params字段来推断表之间的连接关系");
 		List<String> tables=new ArrayList<String>();
 		for(String column:columns){
 			addTable(column,tables);

@@ -8,7 +8,11 @@ public interface ObserverConfig {
 	
 	public boolean isMonitorQueryFile();
 	
+	public boolean isMonitorBaseRelationFiles();
+	
 	public String getQueryFileDirectory();
 	
 	public String getRelationDir();
+	
+	public String getBaseRelationFilesDir();
 }

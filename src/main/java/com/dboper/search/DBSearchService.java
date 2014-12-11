@@ -22,11 +22,11 @@ import com.dboper.search.format.ProcessUnit;
 import com.dboper.search.format.form.UnionFormFormatter;
 import com.dboper.search.format.value.UnionValueFormatter;
 import com.dboper.search.observer.ObserverControll;
-import com.dboper.search.observer.ProcessFileChange;
+import com.dboper.search.observer.ProcessQueryFileChange;
 import com.dboper.search.util.FileUtil;
 
 @Service
-public class DBSearchService implements ProcessFileChange,Bootstrap{
+public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 	
 	private final Log logger = LogFactory.getLog(DBSearchService.class);
 
@@ -167,7 +167,7 @@ public class DBSearchService implements ProcessFileChange,Bootstrap{
 	}
 	
 	@Override
-	public void processChange(Map<String, QueryBody> change,String fileName) {
+	public void processQueryBodyChange(Map<String, QueryBody> change,String fileName) {
 		logger.info("observ "+fileName+" changed");
 		if(change!=null){
 			query_tmp.put(fileName,change);

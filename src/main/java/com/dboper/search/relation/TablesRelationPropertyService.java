@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.core.io.Resource;
@@ -15,8 +16,9 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.util.StringUtils;
 
 import com.dboper.search.config.BaseTwoTablesRelationConfig;
+import com.dboper.search.observer.BaseRelationProcess;
 
-public class TablesRelationPropertyService{
+public class TablesRelationPropertyService implements BaseRelationProcess{
 	
 	private BaseTwoTablesRelationConfig config;
 	
@@ -135,6 +137,11 @@ public class TablesRelationPropertyService{
 		list.add(tableTwo);
 		Collections.sort(list);
 		return list.get(0)+"__"+list.get(1);
+	}
+
+	@Override
+	public void processBaseRelation(String fileName,Map<String, String> tablesRelation) {
+		
 	}
 
 }

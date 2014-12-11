@@ -17,8 +17,64 @@ search
 
 2. 集成问题：xml配置文件、编码配置
 
+# 测试案例
+
+URL: http://192.168.83.240:18080/api/search
+请求方法: POST请求
+
+请求体如下内容：
+
+1.  获取创建时间大于某个值的所有APP信息，其中APP中包含组织、产品线、产品信息
+		{
+		  "columns":["app.id","app.app_id","app.name as  appName","app.english_name","app.create_time","status.name as status",
+		  				"app.description","app_container.name as appContainer","app_category.name as appCategory","app_importance.name as appImportance", 
+		  				"organization.name as `organization@mapname`","organization.english_name as `organization@mapenglishName`","organization.code as `organization@mapcode`",
+		  				"product_line.name as `productLine@mapname`","product_line.english_name as `productLine@mapenglishName`","product_line.code as `productLine@mapcode`",
+		  				"product.name as `product@mapname`","product.english_name as `product@mapenglishName`","product.code as `product@mapcode`"
+		  				],
+		  "params":{
+		    			"app.create_time@time>=":"2014-11-1"
+		  			},
+		  "order_by":"app.id desc"
+		}
+2.  查询条件and、or的测试
+		{
+		  "columns":["app.id","app.app_id","app.name as  appName","app.english_name","app.create_time"
+		  				],
+		  "params":{
+		    			"$or":{"app.id":10431,"app.name@like":"%Product%"},
+		    			"app.id@<":12237 
+		  			},
+		  "order_by":"app.id desc"
+		}
+3.	tablesPath测试
+		{
+		  "columns":["app.id","app.app_id","app.name as  appName","app.english_name","app.create_time",
+		  				"status.name as status"
+		  				],
+		  "params":{
+		    			"$or":{"app.id":10431,"app.name@like":"%Product%"}
+		  			},
+		  "order_by":"app.id desc",
+		  "tablesPath":"app left join status"
+		}
+		
+4.	获取组织下的pool
+		{
+		  "columns":[ "organization.id","organization.name","organization.english_name as englishName","organization.code",
+		  				"pool.name as `pools@listname`","pool.pool_id as `pools@listpoolId`","pool.app_type as `pools@listappType`","pool.importance as `pools@listimportance`",
+		  				"pool.pool_type as `pools@listpoolType`","pool.self_support as `pools@listselfSupport`","pool.description as `pools@listdescription`"
+		  			],
+		  "params":{
+		    			
+		  			},
+		  "order_by":"organization.id desc",
+		  "groupColumns":["organization.id"]
+		}
+
+
 # 查询体配置说明：
-###1. columns：用于指定你想要查询哪些表的哪些字段（必选）
+### 1. columns：用于指定你想要查询哪些表的哪些字段（必选）
 
 
    (1)  多个表字段名重复时可以指定别名 如 "app.name as appName"
@@ -83,7 +139,7 @@ search
 		所以必须给出在什么情况下organization是同一个organization，仍需要配置groupColumns字段，表示
         当两个organization的groupColumns都相同的话，则为同一个organization。
 
-2   params字段：用于加入查询条件（可选）
+### 2  params字段：用于加入查询条件（可选）
 
     （1） 最简单的形式如下：
           "params":{
@@ -121,7 +177,7 @@ search
 		  		}
 		app.id和app.name是or的关系，然后它们与app.age是and的关系
 
-3  format 对返回结果的某些字段的数值进行格式化（可选），案例如下：
+### 3  format 对返回结果的某些字段的数值进行格式化（可选），案例如下：
 
 	"format":[
 		  			{
@@ -146,5 +202,27 @@ search
 	则要替换成是，若为false，则要替换成否,当ruleType为regex时，表示name属性符合regex的部分要替换成replacement对应的值，
 	即name中的lg都要替换成lg123，format属性中可以对多个字段的值进行格式化
 
-4   tablesPath ：用于指定表之间的连接路径（可选）
+### 4   tablesPath ：用于指定表之间的连接路径（可选）
+
+	对于表之间的连接，只需要配置基础的信息，即两个表之间的连接关系。这个需要配置文件，默认是在类路径下baseRelation目录下的所有文件（都会读取），
+	格式如下：
+	a,b,a.id=b.a_id
+	每一行配置一个简单地两表连接，a表和b表，他们的连接关系是a.id=b.a_id
+	
+	（1）有了这些基础连接信息，就可以对随意给出的几个表使用算法推断出他们的连接关系，这需要一个算法模块
+	（2）即使是算法自动推断出他们的连接关系，有时这种连接关系也不一定就是我们所想要的关系，所以又有另一种做法就是，直接指定连接路径
+	tablesPath就是针对第二种形式的，如 "tablesPath":"a left join b join c"
+	表示此次查询的表之间的连接是a-》b-》c，然后会根据基础的两表之间的连接关系得到最终的连接关系。
+	基础信息配置如下:
+	a与b的连接关系是a.id=b.a_id
+	b与c的连接关系是b.id=c.b_id
+	所以最终得到的连接关系是:
+	a left join b on a.id=b.a_id
+	join c on b.id=c.b_id
+	
+	tablesPath支持的情况有：
+	（1） join、left join、right join
+	（2）当tablesPath为 a join b join c,可能真实的连接情况是a与b有关系，a与c有关系，所以在处理join c的时候会依次向前找，看看那个与c有关系。
+	先找b，若b与c没有关系，再继续向前找a，依次类推。
+	
     

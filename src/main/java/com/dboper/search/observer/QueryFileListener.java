@@ -7,23 +7,23 @@ import com.dboper.search.util.FileUtil;
 
 public class QueryFileListener extends FileAlterationListenerAdaptor{
 	
-	private ProcessFileChange processFileChange;
+	private ProcessQueryFileChange processFileChange;
 	
-	public QueryFileListener(ProcessFileChange processFileChange) {
+	public QueryFileListener(ProcessQueryFileChange processFileChange) {
 		super();
 		this.processFileChange = processFileChange;
 	}
 
 	@Override
 	public void onFileChange(File file) {
-		processFileChange.processChange(FileUtil.getQueryBodyFromFile(file),file.getName());
+		processFileChange.processQueryBodyChange(FileUtil.getQueryBodyFromFile(file),file.getName());
 	}
 
-	public ProcessFileChange getProcessFileChange() {
+	public ProcessQueryFileChange getProcessFileChange() {
 		return processFileChange;
 	}
 
-	public void setProcessFileChange(ProcessFileChange processFileChange) {
+	public void setProcessFileChange(ProcessQueryFileChange processFileChange) {
 		this.processFileChange = processFileChange;
 	}
 	
