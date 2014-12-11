@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
-import org.springframework.util.StringUtils;
 
 import com.dboper.search.config.BaseTwoTablesRelationConfig;
 import com.dboper.search.observer.BaseRelationProcess;
@@ -41,8 +40,10 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 					File file=resource.getFile();
 					BufferedReader bufferedReader=new BufferedReader(new FileReader(file));
 					String lineStr=bufferedReader.readLine();
-					while(StringUtils.hasLength(lineStr)){
-						parseLine(lineStr);
+					while(lineStr!=null){
+						if(lineStr.length()>0){
+							parseLine(lineStr);
+						}
 						lineStr=bufferedReader.readLine();
 					}
 					bufferedReader.close();

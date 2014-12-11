@@ -15,11 +15,13 @@ public class ObserverControll{
 	private ObserverConfig config;
 	private ObserverModule observerModule;
 	private ProcessQueryFileChange processFileChange;
+	private BaseRelationProcess baseRelationProcess;
 	private final Log logger = LogFactory.getLog(DBSearchService.class);
 	
-	public ObserverControll(ObserverConfig config,ProcessQueryFileChange processFileChange){
+	public ObserverControll(ObserverConfig config,ProcessQueryFileChange processFileChange,BaseRelationProcess baseRelationProcess){
 		this.config=config;
 		this.processFileChange=processFileChange;
+		this.baseRelationProcess=baseRelationProcess;
 	}
 	
 	public void initObserverModule() {
@@ -55,7 +57,7 @@ public class ObserverControll{
 		observerItem.setName("baseRelation");
 		observerItem.setSuffix("json");
 		List<FileAlterationListener> listeners=new ArrayList<FileAlterationListener>();
-		//listeners.add(new BaseRelationListener(baseRelationProcess));
+		listeners.add(new BaseRelationListener(baseRelationProcess));
 		observerItem.setListeners(listeners);
 		return observerItem;
 	}

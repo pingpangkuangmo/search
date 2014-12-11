@@ -201,7 +201,7 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 	}
 
 	private void initObserverModule() {
-		observerControll=new ObserverControll(config,this);
+		observerControll=new ObserverControll(config,this,null);
 		observerControll.initObserverModule();
 	}
 	
