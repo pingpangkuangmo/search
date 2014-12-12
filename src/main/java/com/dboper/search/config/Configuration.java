@@ -12,7 +12,7 @@ import com.dboper.search.relation.TablesRelationService;
 import com.dboper.search.sqlparams.SqlParamsHandler;
 
 @Service
-public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTablesRelationConfig{
+public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTablesRelationConfig,TableColumnsConfig{
 
 	private String tablePrefix="";
 	
@@ -30,6 +30,8 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	private String relationDir="relation";
 	
 	private String baseRelationFilesDir="baseRelation";
+	
+	private String tableColumnsDir="tables";
 	
 	private boolean monitorQueryFile=false;
 	
@@ -139,6 +141,11 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	@Override
 	public String getBaseTwoTablesRelation() {
 		return baseRelationFilesDir;
+	}
+
+	@Override
+	public String getTableColumnsDir() {
+		return tableColumnsDir;
 	}
 	
 }

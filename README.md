@@ -17,6 +17,10 @@ search
 
 2. 集成问题：xml配置文件、编码配置
 
+3. 如何设计监控模块，方便快速的添加监控项
+
+4. 在此基础上再抽象出一层，用户只需指定organization-app，就意思是查询organization及其apps信息
+
 # 测试案例
 
 URL: http://192.168.83.240:18080/api/search

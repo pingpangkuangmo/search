@@ -112,16 +112,14 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 			if(relation==null){
 				return "";
 			}
-			String prefix="";
-			String suffix=" ";
-			if(i>0){
-				prefix=" ";
-			}
+			int start=joinStr.indexOf(" "+tableOne+" ")+(" "+tableOne+" ").length();
+			int end=joinStr.indexOf(" "+tableTwo+" ");
 			if(i==len-2){
-				suffix="";
+				end=joinStr.lastIndexOf(" "+tableTwo);
 			}
-			int start=joinStr.indexOf(prefix+tableOne+" ")+(prefix+tableOne).length();
-			int end=joinStr.indexOf(" "+tableTwo+suffix);
+			if(i==0){
+				start=joinStr.indexOf(tableOne+" ")+(tableOne+" ").length();
+			}
 			String joinType=joinStr.substring(start,end).trim();
 			relation=relation.replaceAll(tableTwo+"\\.",config.getTablePrefix()+tableTwo+".");
 			relation=relation.replaceAll(realLeftTable+"\\.",config.getTablePrefix()+realLeftTable+".");

@@ -9,7 +9,7 @@ import com.dboper.search.format.value.ValueFormatterRule;
 
 public class QueryBody implements Cloneable{
 
-	private List<String> columns=new ArrayList<String>();;
+	private List<String> columns=new ArrayList<String>();
 	private Map<String,Object> params=new HashMap<String,Object>();;
 	private String order_by="";
 	private int limit;
@@ -18,6 +18,7 @@ public class QueryBody implements Cloneable{
 	private List<String> groupColumns=new ArrayList<String>();
 	private List<ValueFormatterRule> format=new ArrayList<ValueFormatterRule>();
 	private String tablesPath;
+	private List<String> entityColumns=new ArrayList<String>();
 	
 	public QueryBody() {
 		super();
@@ -26,6 +27,14 @@ public class QueryBody implements Cloneable{
 	@Override
 	public QueryBody clone() throws CloneNotSupportedException {
 		return (QueryBody)super.clone();
+	}
+
+	public List<String> getEntityColumns() {
+		return entityColumns;
+	}
+
+	public void setEntityColumns(List<String> entityColumns) {
+		this.entityColumns = entityColumns;
 	}
 
 	public String getTablesPath() {
