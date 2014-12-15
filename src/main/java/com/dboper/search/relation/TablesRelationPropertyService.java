@@ -10,12 +10,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
 import com.dboper.search.config.BaseTwoTablesRelationConfig;
 import com.dboper.search.observer.BaseRelationProcess;
+import com.dboper.search.util.ListUtil;
 
 public class TablesRelationPropertyService implements BaseRelationProcess{
 	
@@ -23,9 +28,13 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 	
 	private ConcurrentHashMap<String,String> baseTwoTablesRelation=new ConcurrentHashMap<String,String>();
 	
+	private ConcurrentHashMap<String,List<String>> tableAndRelationtables=new ConcurrentHashMap<String,List<String>>();
+	
 	private ConcurrentHashMap<String,String> tablesRelationParseResult=new ConcurrentHashMap<String,String>();
 	
 	ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+	
+	private final Log logger = LogFactory.getLog(getClass());
 	
 	public TablesRelationPropertyService(BaseTwoTablesRelationConfig config){
 		this.config=config;
@@ -60,6 +69,22 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 			List<String> tables=new ArrayList<String>();
 			tables.add(parts[0]);
 			tables.add(parts[1]);
+			List<String> tableOneRelationTables=tableAndRelationtables.get(parts[0]);
+			List<String> tableTwoRelationTables=tableAndRelationtables.get(parts[1]);
+			if(tableOneRelationTables==null){
+				tableOneRelationTables=new ArrayList<String>();
+				tableAndRelationtables.put(parts[0], tableOneRelationTables);
+			}
+			if(!tableOneRelationTables.contains(parts[1])){
+				tableOneRelationTables.add(parts[1]);
+			}
+			if(tableTwoRelationTables==null){
+				tableTwoRelationTables=new ArrayList<String>();
+				tableAndRelationtables.put(parts[1], tableTwoRelationTables);
+			}
+			if(!tableTwoRelationTables.contains(parts[0])){
+				tableTwoRelationTables.add(parts[0]);
+			}
 			Collections.sort(tables);
 			baseTwoTablesRelation.put(tables.get(0)+"__"+tables.get(1),parts[2]);
 		}
@@ -92,25 +117,39 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 		for(int i=0,len=tables.length;i<len-1;i++){
 			String tableOne=tables[i].trim();
 			String tableTwo=tables[i+1].trim();
-			String tableStr=getSortStr(tableOne,tableTwo,list);
-			String relation=baseTwoTablesRelation.get(tableStr);
-			String realLeftTable=tableOne;
-			if(relation==null){
-				//一旦有一个连接关系没找到，继续找和前一个表之间的连接关系
-				if(i>0){
-					for(int j=i-1;j>=0;j--){
-						String otherTablesStr=getSortStr(tableTwo,tables[j],list);
-						relation=baseTwoTablesRelation.get(otherTablesStr);
-						if(relation!=null){
-							realLeftTable=tables[j];
-							break;
-						}
-					}
+			String realLeftTable=null;
+			String relation=null;
+			String intersectionTable=null;
+			for(int j=i;j>=0;j--){
+				String tableLeft=tables[j].trim();
+				String otherTablesStr=getSortStr(tableTwo,tableLeft,list);
+				relation=baseTwoTablesRelation.get(otherTablesStr);
+				if(relation!=null){
+					realLeftTable=tableLeft;
+					break;
 				}
 			}
-			//如果都没找到则结束表示无法处理
+			//如果都没找到能和左边相联接的表，则尝试获取他们的公共表
 			if(relation==null){
-				return "";
+				for(int j=i;j>=0;j--){
+					String tableLeft=tables[j].trim();
+					//用于处理中间表，扩展一级 organization 和 product_line都含有organization_product_lines表，所以自动把中间表加入进来
+					//需要提前准备这样的数据，只处理一层中间表，不再处理复杂的多级
+					List<String> tableTwoRelationTables=tableAndRelationtables.get(tableTwo);
+					List<String> realLeftRelationTables=tableAndRelationtables.get(tableLeft);
+					List<String> intersection=ListUtil.intersection(tableTwoRelationTables,realLeftRelationTables);
+					if(intersection.size()>0){
+						//表示他们之间有中间表，选取中间表中的一个（中间表可能有很多，这一点也会产生很多问题）
+						intersectionTable=intersection.get(0);
+						logger.warn("找到能和"+tableTwo+"联接的中间表"+intersectionTable);
+						realLeftTable=tableLeft;
+						break;
+					}
+				}
+				if(realLeftTable==null){
+					logger.warn("也没有找到能和"+tableTwo+"联接的中间表");
+					return "";
+				}
 			}
 			int start=joinStr.indexOf(" "+tableOne+" ")+(" "+tableOne+" ").length();
 			int end=joinStr.indexOf(" "+tableTwo+" ");
@@ -121,13 +160,25 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 				start=joinStr.indexOf(tableOne+" ")+(tableOne+" ").length();
 			}
 			String joinType=joinStr.substring(start,end).trim();
-			relation=relation.replaceAll(tableTwo+"\\.",config.getTablePrefix()+tableTwo+".");
-			relation=relation.replaceAll(realLeftTable+"\\.",config.getTablePrefix()+realLeftTable+".");
-			sb.append(" ").append(joinType).append(" ").append(config.getTablePrefix()+tableTwo).append(" on ").append(relation);
+			if(intersectionTable!=null){
+				//中间表的级联
+				String relationOne=baseTwoTablesRelation.get(getSortStr(intersectionTable,realLeftTable,list));
+				appendRelation(sb, intersectionTable, realLeftTable, relationOne, joinType);
+				String relationTwo=baseTwoTablesRelation.get(getSortStr(tableTwo,intersectionTable,list));
+				appendRelation(sb, tableTwo, intersectionTable, relationTwo, joinType);
+			}else{
+				appendRelation(sb, tableTwo, realLeftTable, relation, joinType);
+			}
 		}
 		String fullRelation=sb.toString();
 		tablesRelationParseResult.put(joinStr,fullRelation);
 		return fullRelation;
+	}
+	
+	private void appendRelation(StringBuilder sb,String table,String tableLeft,String relation,String joinType){
+		relation=relation.replaceAll(table+"\\.",config.getTablePrefix()+table+".");
+		relation=relation.replaceAll(tableLeft+"\\.",config.getTablePrefix()+tableLeft+".");
+		sb.append(" ").append(joinType).append(" ").append(config.getTablePrefix()+table).append(" on ").append(relation);
 	}
 	
 	private String getSortStr(String tableOne,String tableTwo,List<String> list){

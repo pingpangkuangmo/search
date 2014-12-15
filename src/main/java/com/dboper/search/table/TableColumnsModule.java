@@ -30,15 +30,21 @@ public class TableColumnsModule {
 		if(entityColumns!=null && entityColumns.size()>0){
 			List<String> columns=new ArrayList<String>();
 			columns.clear();
+			String fatherEntity=null;
+			boolean haveSons=false;
 			for(String entity:entityColumns){
 				String currentFlag=null;
 				for(String flag:flags){
 					if(entity.contains(flag)){
+						if("@list".equals(flag)){
+							haveSons=true;
+						}
 						currentFlag=flag;
 						break;
 					}
 				}
 				if(currentFlag==null){
+					fatherEntity=entity;
 					List<String> currentColumns=getColumns(entity);
 					columns.addAll(currentColumns);
 				}else{
@@ -54,6 +60,15 @@ public class TableColumnsModule {
 						}
 					}
 				}
+			}
+			List<String> groupColumns=q.getGroupColumns();
+			if(haveSons && fatherEntity!=null && groupColumns.size()==0){
+				String fatherIdColumn=fatherEntity+".id";
+				if(!columns.contains(fatherIdColumn)){
+					columns.add(fatherIdColumn);
+					q.getDeleteColumns().add(fatherIdColumn);
+				}
+				groupColumns.add(fatherIdColumn);
 			}
 			q.setColumns(columns);
 		}

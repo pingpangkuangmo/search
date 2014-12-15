@@ -234,5 +234,6 @@ URL: http://192.168.83.240:18080/api/search
 	（1） join、left join、right join
 	（2）当tablesPath为 a join b join c,可能真实的连接情况是a与b有关系，a与c有关系，所以在处理join c的时候会依次向前找，看看那个与c有关系。
 	先找b，若b与c没有关系，再继续向前找a，依次类推。
+	（3）还支持省略中间表的功能，如 a join a_b join b 可以写成a join b。对于a join b 还是首先进行（2）的处理，当都找不到时，则判定通过中间表来联接
 	
     

@@ -19,6 +19,7 @@ public class QueryBody implements Cloneable{
 	private List<ValueFormatterRule> format=new ArrayList<ValueFormatterRule>();
 	private String tablesPath;
 	private List<String> entityColumns=new ArrayList<String>();
+	private List<String> deleteColumns=new ArrayList<String>();
 	
 	public QueryBody() {
 		super();
@@ -27,6 +28,14 @@ public class QueryBody implements Cloneable{
 	@Override
 	public QueryBody clone() throws CloneNotSupportedException {
 		return (QueryBody)super.clone();
+	}
+
+	public List<String> getDeleteColumns() {
+		return deleteColumns;
+	}
+
+	public void setDeleteColumns(List<String> deleteColumns) {
+		this.deleteColumns = deleteColumns;
 	}
 
 	public List<String> getEntityColumns() {
