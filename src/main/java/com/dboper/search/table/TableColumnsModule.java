@@ -2,6 +2,7 @@ package com.dboper.search.table;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.util.Assert;
 
@@ -25,7 +26,7 @@ public class TableColumnsModule {
 		tableColumnsService=new TableColumnsService(config);
 	}
 	
-	public QueryBody processQueryBodyTableCoumns(QueryBody q){
+	public QueryBody processQueryBodyTableCoumns(QueryBody q,Map<String,Map<String,String>> reNameTables){
 		List<String> entityColumns=q.getEntityColumns();
 		if(entityColumns!=null && entityColumns.size()>0){
 			List<String> columns=new ArrayList<String>();
@@ -51,6 +52,7 @@ public class TableColumnsModule {
 					String[] parts=splitTwo(entity,currentFlag);
 					List<String> currentColumns=getColumns(parts[1]);
 					for(String currentColumn:currentColumns){
+						currentColumn=processRenameTable(currentColumn,reNameTables.get(parts[1]));
 						if(currentColumn.contains(" as ")){
 							String[] tableColumnAs=splitTwo(currentColumn," as ");
 							columns.add(tableColumnAs[0]+" as `"+parts[0]+currentFlag+tableColumnAs[1]+"`");
@@ -75,6 +77,18 @@ public class TableColumnsModule {
 		return q;
 	}
 	
+	private String processRenameTable(String currentColumn,Map<String,String> reNameTables) {
+		if(reNameTables==null){
+			return currentColumn;
+		}
+		for(String table:reNameTables.keySet()){
+			if(currentColumn.startsWith(table+".")){
+				return currentColumn.replaceFirst(table+"\\.",reNameTables.get(table)+".");
+			}
+		}
+		return currentColumn;
+	}
+
 	private String[] splitTwo(String str,String flag){
 		String[] ret=str.split(flag);
 		if(ret.length==2){

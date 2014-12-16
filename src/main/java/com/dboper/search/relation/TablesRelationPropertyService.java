@@ -6,11 +6,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -19,8 +20,11 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
 import com.dboper.search.config.BaseTwoTablesRelationConfig;
+import com.dboper.search.domain.QueryBody;
 import com.dboper.search.observer.BaseRelationProcess;
+import com.dboper.search.table.TableColumnsModule;
 import com.dboper.search.util.ListUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TablesRelationPropertyService implements BaseRelationProcess{
 	
@@ -28,7 +32,11 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 	
 	private ConcurrentHashMap<String,String> baseTwoTablesRelation=new ConcurrentHashMap<String,String>();
 	
-	private ConcurrentHashMap<String,List<String>> tableAndRelationtables=new ConcurrentHashMap<String,List<String>>();
+	private ConcurrentHashMap<String,List<String>> tablesAutoAndRelationTables=new ConcurrentHashMap<String,List<String>>();
+	
+	private ConcurrentHashMap<String,List<String>> tableConfigAndRelationtables=new ConcurrentHashMap<String,List<String>>();
+	
+	private ConcurrentHashMap<String,List<String>> sonTables=new ConcurrentHashMap<String,List<String>>();
 	
 	private ConcurrentHashMap<String,String> tablesRelationParseResult=new ConcurrentHashMap<String,String>();
 	
@@ -40,10 +48,11 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 		this.config=config;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void init() {
 		//加载配置基础的两个表之间的配置文件，可以是某个目录下多个配置文件
 		try {
-			Resource[] resources = resolver.getResources("classpath*:"+this.config.getBaseTwoTablesRelation()+"/*");
+			Resource[] resources = resolver.getResources("classpath*:"+this.config.getBaseTwoTablesRelation()+"/*.txt");
 			if(resources!=null && resources.length>0){
 				for(Resource resource:resources){
 					File file=resource.getFile();
@@ -58,6 +67,23 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 					bufferedReader.close();
 				}
 			}
+			Resource[] mapResources = resolver.getResources("classpath*:"+this.config.getBaseTwoTablesRelation()+"/*.json");
+			if(mapResources!=null && mapResources.length>0){
+				tableConfigAndRelationtables.putAll(tablesAutoAndRelationTables);
+				for(Resource resource:mapResources){
+					File file=resource.getFile();
+					ObjectMapper mapper=new ObjectMapper();
+					tableConfigAndRelationtables.putAll(mapper.readValue(file,Map.class));
+				}
+			}
+			Resource[] sonResources = resolver.getResources("classpath*:"+this.config.getSonTables()+"/*.json");
+			if(sonResources!=null && sonResources.length>0){
+				for(Resource resource:sonResources){
+					File file=resource.getFile();
+					ObjectMapper mapper=new ObjectMapper();
+					sonTables.putAll(mapper.readValue(file,Map.class));
+				}
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}  
@@ -69,18 +95,18 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 			List<String> tables=new ArrayList<String>();
 			tables.add(parts[0]);
 			tables.add(parts[1]);
-			List<String> tableOneRelationTables=tableAndRelationtables.get(parts[0]);
-			List<String> tableTwoRelationTables=tableAndRelationtables.get(parts[1]);
+			List<String> tableOneRelationTables=tablesAutoAndRelationTables.get(parts[0]);
+			List<String> tableTwoRelationTables=tablesAutoAndRelationTables.get(parts[1]);
 			if(tableOneRelationTables==null){
 				tableOneRelationTables=new ArrayList<String>();
-				tableAndRelationtables.put(parts[0], tableOneRelationTables);
+				tablesAutoAndRelationTables.put(parts[0], tableOneRelationTables);
 			}
 			if(!tableOneRelationTables.contains(parts[1])){
 				tableOneRelationTables.add(parts[1]);
 			}
 			if(tableTwoRelationTables==null){
 				tableTwoRelationTables=new ArrayList<String>();
-				tableAndRelationtables.put(parts[1], tableTwoRelationTables);
+				tablesAutoAndRelationTables.put(parts[1], tableTwoRelationTables);
 			}
 			if(!tableTwoRelationTables.contains(parts[0])){
 				tableTwoRelationTables.add(parts[0]);
@@ -95,16 +121,20 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 	 * @param joinStr  如  a left join b join c right join d 
 	 * @return
 	 */
-	public String getRelation(String joinStr){
-		String cacheRelation=tablesRelationParseResult.get(joinStr);
+	public String getRelation(QueryBody q,TableColumnsModule tableColumnsModule){
+		return parseJoinStrRelation(q,tableColumnsModule);
+		/*String cacheRelation=tablesRelationParseResult.get(q.getTablesPath());
 		if(cacheRelation==null){
-			return parseJoinStrRelation(joinStr);
+			return parseJoinStrRelation(q,tableColumnsModule);
 		}else{
 			return cacheRelation;
-		}
+		}*/
 	}
 
-	private String parseJoinStrRelation(String joinStr) {
+	private String parseJoinStrRelation(QueryBody q,TableColumnsModule tableColumnsModule) {
+		HashMap<String,Map<String,Map<String,String>>> joinStrChangeTables=new HashMap<String,Map<String,Map<String,String>>>();
+		String joinStr=q.getTablesPath();
+		List<String> allTables=new ArrayList<String>();
 		String tmp=joinStr.replaceAll("left","");
 		tmp=tmp.replaceAll("right","");
 		String[] tables=tmp.split("join");
@@ -112,8 +142,11 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 			return "";
 		}
 		StringBuilder sb=new StringBuilder();
-		sb.append(config.getTablePrefix()+tables[0]);
+		String firstTable=config.getTablePrefix()+tables[0];
+		sb.append(firstTable);
+		allTables.add(firstTable);
 		List<String> list=new ArrayList<String>();
+		addSonTables(tables[0], joinStr, sb, allTables, joinStrChangeTables);
 		for(int i=0,len=tables.length;i<len-1;i++){
 			String tableOne=tables[i].trim();
 			String tableTwo=tables[i+1].trim();
@@ -135,11 +168,11 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 					String tableLeft=tables[j].trim();
 					//用于处理中间表，扩展一级 organization 和 product_line都含有organization_product_lines表，所以自动把中间表加入进来
 					//需要提前准备这样的数据，只处理一层中间表，不再处理复杂的多级
-					List<String> tableTwoRelationTables=tableAndRelationtables.get(tableTwo);
-					List<String> realLeftRelationTables=tableAndRelationtables.get(tableLeft);
+					List<String> tableTwoRelationTables=tableConfigAndRelationtables.get(tableTwo);
+					List<String> realLeftRelationTables=tableConfigAndRelationtables.get(tableLeft);
 					List<String> intersection=ListUtil.intersection(tableTwoRelationTables,realLeftRelationTables);
 					if(intersection.size()>0){
-						//表示他们之间有中间表，选取中间表中的一个（中间表可能有很多，这一点也会产生很多问题）
+						//表示他们之间有中间表，选取中间表中的一个（中间表可能有很多，这一点也会产生很多问题，但可以通过配置解决）
 						intersectionTable=intersection.get(0);
 						logger.warn("找到能和"+tableTwo+"联接的中间表"+intersectionTable);
 						realLeftTable=tableLeft;
@@ -151,34 +184,90 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 					return "";
 				}
 			}
-			int start=joinStr.indexOf(" "+tableOne+" ")+(" "+tableOne+" ").length();
-			int end=joinStr.indexOf(" "+tableTwo+" ");
-			if(i==len-2){
-				end=joinStr.lastIndexOf(" "+tableTwo);
-			}
+			
+			//当有多个重复表出现的时候，就出bug了
+			String prefix=" ";
 			if(i==0){
-				start=joinStr.indexOf(tableOne+" ")+(tableOne+" ").length();
+				prefix="";
+			}else{
+				prefix=" ";
 			}
-			String joinType=joinStr.substring(start,end).trim();
+			String sub=" ";
+			if(i==len-2){
+				sub="";
+			}else{
+				sub=" ";
+			}
+			Pattern pattern=Pattern.compile(prefix+tableOne+"\\s+(left join)?(right join)?(join)?\\s+"+tableTwo+sub);
+			Matcher matcher=pattern.matcher(joinStr);
+			String target=null;
+			String joinType=null;
+			if(matcher.find()){
+				target=matcher.group();
+			}
+			if(target==null){
+				logger.warn("没有找到能和"+tableOne+"和"+tableTwo+"的连接类型为 join、left join、right join");
+				return "";
+			}else{
+				String tmp1=target.trim().substring(tableOne.length());
+				joinType=tmp1.substring(0,tmp1.indexOf(tableTwo)).trim();
+			}
 			if(intersectionTable!=null){
 				//中间表的级联
 				String relationOne=baseTwoTablesRelation.get(getSortStr(intersectionTable,realLeftTable,list));
-				appendRelation(sb, intersectionTable, realLeftTable, relationOne, joinType);
+				appendRelation(joinStr,sb, intersectionTable, realLeftTable, relationOne, joinType,allTables,joinStrChangeTables);
 				String relationTwo=baseTwoTablesRelation.get(getSortStr(tableTwo,intersectionTable,list));
-				appendRelation(sb, tableTwo, intersectionTable, relationTwo, joinType);
+				appendRelation(joinStr,sb, tableTwo, intersectionTable, relationTwo, joinType,allTables,joinStrChangeTables);
 			}else{
-				appendRelation(sb, tableTwo, realLeftTable, relation, joinType);
+				appendRelation(joinStr,sb, tableTwo, realLeftTable, relation, joinType,allTables,joinStrChangeTables);
 			}
+			addSonTables(tableTwo, joinStr, sb, allTables, joinStrChangeTables);
 		}
+		tableColumnsModule.processQueryBodyTableCoumns(q,joinStrChangeTables.get(joinStr));
 		String fullRelation=sb.toString();
 		tablesRelationParseResult.put(joinStr,fullRelation);
 		return fullRelation;
 	}
-	
-	private void appendRelation(StringBuilder sb,String table,String tableLeft,String relation,String joinType){
-		relation=relation.replaceAll(table+"\\.",config.getTablePrefix()+table+".");
-		relation=relation.replaceAll(tableLeft+"\\.",config.getTablePrefix()+tableLeft+".");
-		sb.append(" ").append(joinType).append(" ").append(config.getTablePrefix()+table).append(" on ").append(relation);
+
+	private void addSonTables(String table,String joinStr,StringBuilder sb,List<String> allTables,HashMap<String,Map<String,Map<String,String>>> joinStrChangeTables) {
+		table=table.trim();
+		List<String> sonTable=sonTables.get(table);
+		if(sonTable==null || sonTable.size()<1){
+			return ;
+		}
+		for(String son:sonTable){
+			appendRelation(joinStr,sb,son,table,baseTwoTablesRelation.get(getSortStr(table,son,new ArrayList<String>())),"left join", allTables, joinStrChangeTables);
+		}
+	}
+
+	private void appendRelation(String joinStr,StringBuilder sb,String table,String tableLeft,
+			String relation,String joinType,List<String> allTables,HashMap<String,Map<String,Map<String,String>>> joinStrChangeTables){
+		//对于重复表要进行重命名，如a、b、c都与status表有关系，然而a与b的中间表不是status而是a_b
+		if(allTables.contains(table)){
+			//重命名，包括连接关系的重命名和对应字段的重命名
+			Map<String,Map<String,String>> changeTables=joinStrChangeTables.get(joinStr);
+			if(changeTables==null){
+				changeTables=new HashMap<String,Map<String,String>>();
+				joinStrChangeTables.put(joinStr,changeTables);
+			}
+			Map<String,String> statusRenames=changeTables.get(tableLeft);
+			if(statusRenames==null){
+				statusRenames=new HashMap<String,String>();
+				changeTables.put(tableLeft,statusRenames);
+			}
+			String reNameTable=table+"_"+tableLeft+"ReName";
+			statusRenames.put(table,reNameTable);
+			relation=relation.replaceAll(table+"\\.",config.getTablePrefix()+reNameTable+".");
+			relation=relation.replaceAll(tableLeft+"\\.",config.getTablePrefix()+tableLeft+".");
+			sb.append(" ").append(joinType).append(" ").append(config.getTablePrefix()+table).append(" ").append(config.getTablePrefix()+reNameTable)
+						.append(" on ").append(relation);
+			//字段的重命名,放到分析完成之后一起做
+		}else{
+			allTables.add(table);
+			relation=relation.replaceAll(table+"\\.",config.getTablePrefix()+table+".");
+			relation=relation.replaceAll(tableLeft+"\\.",config.getTablePrefix()+tableLeft+".");
+			sb.append(" ").append(joinType).append(" ").append(config.getTablePrefix()+table).append(" on ").append(relation);
+		}
 	}
 	
 	private String getSortStr(String tableOne,String tableTwo,List<String> list){

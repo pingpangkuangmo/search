@@ -13,13 +13,7 @@ search
 
 # 改进：
 
-1. 画出整体流程，分清责任机制，该扩展扩展
-
-2. 集成问题：xml配置文件、编码配置
-
-3. 如何设计监控模块，方便快速的添加监控项
-
-4. 在此基础上再抽象出一层，用户只需指定organization-app，就意思是查询organization及其apps信息   （已实现）
+1. 加入解析缓存
 
 # 测试案例
 
@@ -82,6 +76,38 @@ URL: http://192.168.83.240:18080/api/search
 		  "groupColumns":["organization.id"]
 		}
 
+5.	更进一步简化columns配置，如获取所有组织下的产品线、产品、应用
+   
+	{
+	  	"entityColumns":["organization","productLines@listproduct_line","products@listproduct","apps@listapp"],
+	  	"tablesPath":"organization left join product_line left join product left join app left join app_category left join app_container left join app_importance"
+	}
+	
+6.	更进一步简化，简化中间表和附属表
+	
+	{
+  		"entityColumns":["organization","productLines@listproduct_line","products@listproduct","apps@listapp"],
+  		"tablesPath":"organization left join product_line left join product left join app"
+	}
+	
+	
+	{
+  		"entityColumns":["app","product@mapproduct","productLine@mapproduct_line","organization@maporganization"],
+  		"tablesPath":"organization left join product_line left join product left join app"
+	}
+	
+	再如：
+	
+	{
+  		"entityColumns":["product_line","products@listproduct","apps@listapp"],
+  		"tablesPath":"product_line left join product left join app "
+	}
+	
+	{
+  		"entityColumns":["app","product@mapproduct","productLine@mapproduct_line"],
+  		"tablesPath":"product_line left join product left join app"
+	}
+	
 
 # 查询体配置说明：
 ### 1. columns：用于指定你想要查询哪些表的哪些字段（必选）

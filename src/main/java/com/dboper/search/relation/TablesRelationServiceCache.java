@@ -15,6 +15,8 @@ import org.springframework.util.StringUtils;
 
 import com.dboper.search.Bootstrap;
 import com.dboper.search.config.Configuration;
+import com.dboper.search.domain.QueryBody;
+import com.dboper.search.table.TableColumnsModule;
 import com.dboper.search.util.MapUtil;
 import com.dboper.search.util.TablesRelationUtil;
 
@@ -32,12 +34,15 @@ public class TablesRelationServiceCache implements Bootstrap{
 	
 	private TablesRelationPropertyService tablesRelationPropertyService;
 	
+	private TableColumnsModule tableColumnsModule;
+	
 	private final Log logger = LogFactory.getLog(getClass());
 	
 	@Override
 	public void init() {
 		registerTablesRelationService();
 		initTablesRelation();
+		tableColumnsModule=new TableColumnsModule(config);
 	}
 	
 	public void refreshTablesRelationFromDB(){
@@ -67,28 +72,25 @@ public class TablesRelationServiceCache implements Bootstrap{
 	private void initTablesRelationFromDB() {
 		tablesRelationCache.putAll(dbTablesRelationService.selectAll());
 	}
-
-	public String getTablesRelation(List<String> columns,Map<String, Object> params,String tablePath) {
-		return getTablesRelation(columns,params,null,null);
-	}
 	
-	public String getTablesRelation(List<String> columns,Map<String, Object> params,String action,String tablePath) {
+	public String getTablesRelation(QueryBody q) {
 		String relation="";
-		if(StringUtils.hasLength(tablePath)){
-			relation=this.tablesRelationPropertyService.getRelation(tablePath);
+		if(StringUtils.hasLength(q.getTablesPath())){
+			relation=this.tablesRelationPropertyService.getRelation(q,tableColumnsModule);
 		}
 		if(StringUtils.hasLength(relation)){
 			logger.warn("使用了tablesPath来寻找表之间的连接关系："+relation);
 			return relation;
 		}
 		logger.warn("tablesPath没有找到连接关系，使用了columns和params字段来推断表之间的连接关系");
+		tableColumnsModule.processQueryBodyTableCoumns(q,null);
 		List<String> tables=new ArrayList<String>();
-		for(String column:columns){
+		for(String column:q.getColumns()){
 			addTable(column,tables);
 		}
-		processAndOrTableName(params, tables);
+		processAndOrTableName(q.getParams(), tables);
 		Assert.notEmpty(tables);
-		return getTablesRelation(tables,action);
+		return getTablesRelation(tables,q.getAction());
 	}
 	
 	@SuppressWarnings("unchecked")

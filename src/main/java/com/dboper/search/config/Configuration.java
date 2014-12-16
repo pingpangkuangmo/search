@@ -33,6 +33,8 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	
 	private String tableColumnsDir="tables";
 	
+	private String sonTables="sonTables";
+	
 	private boolean monitorQueryFile=false;
 	
 	private boolean monitorRelationFile=false;
@@ -41,6 +43,14 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	
 	private boolean monitorBaseRelationFiles=false;
 	
+	public String getSonTables() {
+		return sonTables;
+	}
+
+	public void setSonTables(String sonTables) {
+		this.sonTables = sonTables;
+	}
+
 	public List<ValueFormatter> getFormatters() {
 		return formatters;
 	}

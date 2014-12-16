@@ -20,7 +20,6 @@ import com.dboper.search.sqlparams.DefaultSqlParamsParser;
 import com.dboper.search.sqlparams.InSqlParamsParser;
 import com.dboper.search.sqlparams.SqlParamsHandler;
 import com.dboper.search.sqlparams.TimeSqlParamsParser;
-import com.dboper.search.table.TableColumnsModule;
 import com.dboper.search.util.ListToStringUtil;
 
 @Service
@@ -36,13 +35,10 @@ public class SqlService implements Bootstrap{
 	
 	private List<SqlParamsHandler> sqlParamsHandlers;
 	
-	private TableColumnsModule tableColumnsModule;
-	
 	@Override
 	public void init() {
 		registerSqlParamsHandlers();
 		tablesRelationServiceCache.init();
-		tableColumnsModule=new TableColumnsModule(config);
 	}
 	
 	public void initTablesRelationFromDB(){
@@ -64,14 +60,13 @@ public class SqlService implements Bootstrap{
 		if(q==null){
 			return "";
 		}
-		q=tableColumnsModule.processQueryBodyTableCoumns(q);
 		String tablePrefix=config.getTablePrefix();
-		List<String> columns=q.getColumns();
-		Map<String,Object> params=q.getParams();
-		String relation=tablesRelationServiceCache.getTablesRelation(columns,params,q.getAction(),q.getTablesPath());
+		String relation=tablesRelationServiceCache.getTablesRelation(q);
 		if(!StringUtils.hasLength(relation)){
 			return "";
 		}
+		List<String> columns=q.getColumns();
+		Map<String,Object> params=q.getParams();
 		StringBuilder sql=new StringBuilder("select ");
 		if(q.isDistinct()){
 			sql.append(" distinct ");
