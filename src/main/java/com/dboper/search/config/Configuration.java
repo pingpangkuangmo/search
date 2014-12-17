@@ -39,8 +39,6 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	
 	private boolean monitorRelationFile=false;
 	
-	private boolean monitorModule=false;
-	
 	private boolean monitorBaseRelationFiles=false;
 	
 	public String getSonTables() {
@@ -57,14 +55,6 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 
 	public void setFormatters(List<ValueFormatter> formatters) {
 		this.formatters = formatters;
-	}
-
-	public boolean isMonitorModule() {
-		return monitorModule;
-	}
-
-	public void setMonitorModule(boolean monitorModule) {
-		this.monitorModule = monitorModule;
 	}
 
 	public boolean isMonitorQueryFile() {

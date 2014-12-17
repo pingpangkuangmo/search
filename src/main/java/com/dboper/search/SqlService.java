@@ -31,7 +31,7 @@ public class SqlService implements Bootstrap{
 	@Autowired
 	private TablesRelationServiceCache tablesRelationServiceCache;
 	
-	private final Log logger = LogFactory.getLog(getClass());
+	private final Log logger = LogFactory.getLog(SqlService.class);
 	
 	private List<SqlParamsHandler> sqlParamsHandlers;
 	

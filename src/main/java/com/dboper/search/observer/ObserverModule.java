@@ -12,10 +12,9 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
-import com.dboper.search.Bootstrap;
 import com.dboper.search.exception.monitor.MonitorModuleException;
 
-public class ObserverModule implements Bootstrap{
+public class ObserverModule{
 
 	private ConcurrentHashMap<String,ObserverItem> observerItems=new ConcurrentHashMap<String, ObserverItem>();
 	private ConcurrentHashMap<String,FileAlterationMonitor> monitors=new ConcurrentHashMap<String,FileAlterationMonitor>();
@@ -25,19 +24,9 @@ public class ObserverModule implements Bootstrap{
 	
 	public void addObserverItem(ObserverItem observerItem){
 		if(observerItem!=null){
-			observerItems.put(observerItem.getName(),observerItem);
-		}
-	}
-	
-	public void removeObserverItem(String observerItemName){
-		observerItems.remove(observerItemName);
-	}
-
-	@Override
-	public void init() {
-		for(String observerItemName:observerItems.keySet()){
+			String observerItemName=observerItem.getName();
+			observerItems.put(observerItemName,observerItem);
 			try {
-				ObserverItem observerItem=observerItems.get(observerItemName);
 				Resource[] resources = resolver.getResources("classpath*:"+observerItem.getDir()+"/*."+observerItem.getSuffix());  
 				if(resources!=null && resources.length>0){
 					String dir=resources[0].getFile().getParentFile().getAbsolutePath();
@@ -52,11 +41,16 @@ public class ObserverModule implements Bootstrap{
 				}else{
 					logger.warn("对于"+observerItemName+"初始化监控时没有找到相应的资源文件");
 				}
-			} catch (Exception e) {
-				logger.warn("对于"+observerItemName+"初始化监控时失败");
+			}catch (Exception e) {
 				e.printStackTrace();
+				logger.warn("对于"+observerItemName+"初始化监控时失败");
 			}
 		}
+	}
+	
+	public void removeObserverItem(String observerItemName) throws Exception{
+		stop(observerItemName);
+		observerItems.remove(observerItemName);
 	}
 	
 	public void start(String monitorName) throws Exception{

@@ -21,22 +21,29 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 
 import com.dboper.search.config.BaseTwoTablesRelationConfig;
 import com.dboper.search.domain.QueryBody;
-import com.dboper.search.observer.BaseRelationProcess;
 import com.dboper.search.table.TableColumnsModule;
 import com.dboper.search.util.ListUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class TablesRelationPropertyService implements BaseRelationProcess{
+public class TablesRelationPropertyService{
 	
 	private BaseTwoTablesRelationConfig config;
 	
+	/**
+	 * 两个表之间的连接关系，如 a b a.id=b.aId  则存储为a__b:a.id=b.aId
+	 */
 	private ConcurrentHashMap<String,String> baseTwoTablesRelation=new ConcurrentHashMap<String,String>();
 	
-	private ConcurrentHashMap<String,List<String>> tablesAutoAndRelationTables=new ConcurrentHashMap<String,List<String>>();
-	
+	/**
+	 * 每个表的关联表，如 a:[b,c]，是有两部分构成，首先是通过baseTwoTablesRelation配置自动计算，然后就是将手动配置的覆盖计算的
+	 */
 	private ConcurrentHashMap<String,List<String>> tableConfigAndRelationtables=new ConcurrentHashMap<String,List<String>>();
 	
+	/**
+	 * 每个表的附属表，如organization status则是organization的附属表，附属表不用于和其他表进行关联
+	 */
 	private ConcurrentHashMap<String,List<String>> sonTables=new ConcurrentHashMap<String,List<String>>();
+	
 	
 	private ConcurrentHashMap<String,String> tablesRelationParseResult=new ConcurrentHashMap<String,String>();
 	
@@ -52,6 +59,7 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 	public void init() {
 		//加载配置基础的两个表之间的配置文件，可以是某个目录下多个配置文件
 		try {
+			HashMap<String,List<String>> tablesAutoAndRelationTables=new HashMap<String,List<String>>();
 			Resource[] resources = resolver.getResources("classpath*:"+this.config.getBaseTwoTablesRelation()+"/*.txt");
 			if(resources!=null && resources.length>0){
 				for(Resource resource:resources){
@@ -60,7 +68,7 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 					String lineStr=bufferedReader.readLine();
 					while(lineStr!=null){
 						if(lineStr.length()>0){
-							parseLine(lineStr);
+							parseLine(lineStr,tablesAutoAndRelationTables);
 						}
 						lineStr=bufferedReader.readLine();
 					}
@@ -89,7 +97,7 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 		}  
 	}
 
-	private void parseLine(String lineStr) {
+	private void parseLine(String lineStr,HashMap<String,List<String>> tablesAutoAndRelationTables) {
 		String[] parts=lineStr.split(",");
 		if(parts.length==3){
 			List<String> tables=new ArrayList<String>();
@@ -276,11 +284,6 @@ public class TablesRelationPropertyService implements BaseRelationProcess{
 		list.add(tableTwo);
 		Collections.sort(list);
 		return list.get(0)+"__"+list.get(1);
-	}
-
-	@Override
-	public void processBaseRelation(String fileName,Map<String, String> tablesRelation) {
-		
 	}
 
 }
