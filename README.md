@@ -84,11 +84,17 @@ URL: http://192.168.83.240:18080/api/search
 		}
 	
 6.	更进一步简化，简化中间表和附属表
-	
+		
+		获取所有组织下的所有产品线、产品、应用
+		
+		
 		{
 	  		"entityColumns":["organization","productLines@listproduct_line","products@listproduct","apps@listapp"],
 	  		"tablesPath":"organization left join product_line left join product left join app"
 		}
+		
+		
+		获取所有应用的信息，包括产品、产品线、组织
 		
 		
 		{
@@ -98,10 +104,18 @@ URL: http://192.168.83.240:18080/api/search
 		
 		再如：
 		
+		
+		获取所有产品线的产品和应用信息
+		
+		
 		{
 	  		"entityColumns":["product_line","products@listproduct","apps@listapp"],
 	  		"tablesPath":"product_line left join product left join app "
 		}
+		
+		
+		获取所有应用的信息，包括产品和产品线
+		
 		
 		{
 	  		"entityColumns":["app","product@mapproduct","productLine@mapproduct_line"],
