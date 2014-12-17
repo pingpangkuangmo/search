@@ -9,7 +9,7 @@ search
 
 3. 对于查询条件可以随意增添，支持类似mongodb的and or
 
-4. 对于查询可以直接指定表之间的连接路径，如 organization join organization_product_lines join product_line
+4. 对于查询可以直接指定表之间的连接路径，如 organization left join product_line
 
 # 改进：
 
@@ -137,7 +137,7 @@ URL: http://192.168.83.240:18080/api/search
 		    "product_line.name as `productLine@mapname`","product_line.english_name as `productLine@mapenglishName`"
 	    ]
    
-        以  product.name as `product@mapname` 为例，product.name起别名为`product@mapname`（一定要加上``，
+                       以  product.name as `product@mapname` 为例，product.name起别名为`product@mapname`（一定要加上``，
 		注意不是单引号），@map前面表示该字段为product属性的一部分后面表示在product属性中显示的名称。
 		所以在结果中会有product属性中含有name属性。同理product.english_name as `product@mapenglishName`,
 		则表示在product属性中会有一个englishName属性。对于productLine同理
@@ -169,15 +169,15 @@ URL: http://192.168.83.240:18080/api/search
 		],
 		"groupColumns":["organization.id"]
 		
-        以product_line.id as `productLines@listid`为例，product_line.id起别名为`productLines@listid`,
+                       以product_line.id as `productLines@listid`为例，product_line.id起别名为`productLines@listid`,
 		（一定要加上``，注意不是单引号）， @list之前的内容productLines表示在外层organization中有一个
 		productLines属性，@list之后的内容id表示每一个productLine中显示的属性名使用@list标签则意味着要对结果进行聚合，
 		所以必须给出在什么情况下organization是同一个organization，仍需要配置groupColumns字段，表示
-        当两个organization的groupColumns都相同的话，则为同一个organization。
+                       当两个organization的groupColumns都相同的话，则为同一个organization。
 
 ### 2  params字段：用于加入查询条件（可选）
 
-    （1） 最简单的形式如下：
+            （1） 最简单的形式如下：
           "params":{
 		    			"app.id":123
 		  			}
@@ -191,7 +191,7 @@ URL: http://192.168.83.240:18080/api/search
 
 		 表示条件为app.id>=123,app.name含有"应用"。它们的使用必须在前面配上@符号作为标记
 		 
-    （3） 还支持 in 和 not in 操作，案例如下：
+           （3） 还支持 in 和 not in 操作，案例如下：
 		  "params":{
 		    			"app.id@in":[123,345,232],"app.name@notIn":["ass","assa","sdwe"]
 		  			}
@@ -261,5 +261,7 @@ URL: http://192.168.83.240:18080/api/search
 	（2）当tablesPath为 a join b join c,可能真实的连接情况是a与b有关系，a与c有关系，所以在处理join c的时候会依次向前找，看看那个与c有关系。
 	先找b，若b与c没有关系，再继续向前找a，依次类推。
 	（3）还支持省略中间表的功能，如 a join a_b join b 可以写成a join b。对于a join b 还是首先进行（2）的处理，当都找不到时，则判定通过中间表来联接
+	（4）支持省略，中间表和附属表，如  product join product_apps join app，其中product_apps就是中间表，app join app_category join app_container
+		中app_category、app_container为app的附属表
 	
     
