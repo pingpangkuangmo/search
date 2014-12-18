@@ -19,9 +19,12 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
+import com.dboper.search.cache.EntityNameCache;
+import com.dboper.search.cache.EntityNameContext;
 import com.dboper.search.config.BaseTwoTablesRelationConfig;
 import com.dboper.search.domain.QueryBody;
 import com.dboper.search.table.TableColumnsModule;
+import com.dboper.search.util.ListToStringUtil;
 import com.dboper.search.util.ListUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -47,7 +50,10 @@ public class TablesRelationPropertyService{
 	
 	private ConcurrentHashMap<String,String> tablesRelationParseResult=new ConcurrentHashMap<String,String>();
 	
+	
 	ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+	
+	private EntityNameCache entityNameCache;
 	
 	private final Log logger = LogFactory.getLog(getClass());
 	
@@ -57,6 +63,7 @@ public class TablesRelationPropertyService{
 	
 	@SuppressWarnings("unchecked")
 	public void init() {
+		entityNameCache=new EntityNameCache();
 		//加载配置基础的两个表之间的配置文件，可以是某个目录下多个配置文件
 		try {
 			HashMap<String,List<String>> tablesAutoAndRelationTables=new HashMap<String,List<String>>();
@@ -124,19 +131,55 @@ public class TablesRelationPropertyService{
 		}
 	}
 	
-	/**
-	 * 
-	 * @param joinStr  如  a left join b join c right join d 
-	 * @return
-	 */
 	public String getRelation(QueryBody q,TableColumnsModule tableColumnsModule){
-		return parseJoinStrRelation(q,tableColumnsModule);
-		/*String cacheRelation=tablesRelationParseResult.get(q.getTablesPath());
-		if(cacheRelation==null){
-			return parseJoinStrRelation(q,tableColumnsModule);
+		String cachekey=getEntityNames(q,tableColumnsModule);
+		logger.warn("拿到entityNames的cacheKey为="+cachekey);
+		Map<String,EntityNameContext> entityNamesData=entityNameCache.get(cachekey);
+		if(entityNamesData==null){
+			logger.warn("entityNames的cacheKey:"+cachekey+" 还没有缓存");
+			String relation=parseJoinStrRelation(q,tableColumnsModule);
+			addCache(cachekey,q.getTablesPath(), relation,q.getColumns());
+			logger.warn("entityNames的cacheKey:"+cachekey+" 添加到缓存");
+			return relation;
 		}else{
-			return cacheRelation;
-		}*/
+			EntityNameContext entityNameContext=entityNamesData.get(q.getTablesPath());
+			if(entityNameContext==null){
+				logger.warn("entityNames的cacheKey:"+cachekey+" 命中缓存，但是没有符合tablePath="+q.getTablesPath()+"的数据");
+				String relation=parseJoinStrRelation(q,tableColumnsModule);
+				addCache(q.getTablesPath(),relation,q.getColumns(),entityNamesData);
+				return relation;
+			}else{
+				logger.warn("entityNames的cacheKey:"+cachekey+" 命中缓存，同时有tablePath="+q.getTablesPath()+"的数据，所以直接使用缓存");
+				q.setColumns(entityNameContext.getColumns());
+				return entityNameContext.getRelation();
+			}
+		}
+	}
+	
+	private void addCache(String tablePath,String relation, List<String> columns,Map<String,EntityNameContext> entityNamesData) {
+		EntityNameContext entityNameContext=new EntityNameContext();
+		entityNameContext.setColumns(columns);
+		entityNameContext.setRelation(relation);
+		entityNamesData.put(tablePath,entityNameContext);
+	}
+
+	private void addCache(String cachekey,String tablePath,String relation,List<String> columns){
+		Map<String,EntityNameContext> currentData=new HashMap<String,EntityNameContext>();
+		EntityNameContext entityNameContext=new EntityNameContext();
+		entityNameContext.setRelation(relation);
+		entityNameContext.setColumns(columns);
+		currentData.put(tablePath,entityNameContext);
+		entityNameCache.put(cachekey,currentData);
+	}
+
+	private String getEntityNames(QueryBody q,TableColumnsModule tableColumnsModule) {
+		List<String> entities=tableColumnsModule.getEntity(q);
+		if(entities.size()<0){
+			return "";
+		}else{
+			Collections.sort(entities);
+			return ListToStringUtil.arrayToString(entities,"__");
+		}
 	}
 
 	private String parseJoinStrRelation(QueryBody q,TableColumnsModule tableColumnsModule) {

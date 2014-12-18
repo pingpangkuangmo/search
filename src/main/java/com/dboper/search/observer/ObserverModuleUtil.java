@@ -12,13 +12,13 @@ public class ObserverModuleUtil {
 		ObserverModuleUtil.observerModule = observerModule;
 	}
 	
-	public void startMonitor(String monitorName) throws Exception{
+	public static void startMonitor(String monitorName) throws Exception{
 		if(observerModule!=null){
 			observerModule.start(monitorName);
 		}
 	}
 	
-	public void stopMonitor(String monitorName) throws Exception{
+	public static void stopMonitor(String monitorName) throws Exception{
 		if(observerModule!=null){
 			observerModule.stop(monitorName);
 		}

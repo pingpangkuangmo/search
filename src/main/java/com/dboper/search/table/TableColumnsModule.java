@@ -26,6 +26,31 @@ public class TableColumnsModule {
 		tableColumnsService=new TableColumnsService(config);
 	}
 	
+	public List<String> getEntity(QueryBody q){
+		List<String> entityColumns=q.getEntityColumns();
+		List<String> entities=new ArrayList<String>();
+		if(entityColumns!=null){
+			for(String entityColumn:entityColumns){
+				String currentFlag=null;
+				for(String flag:flags){
+					if(entityColumn.contains(flag)){
+						currentFlag=flag;
+					}
+				}
+				if(currentFlag==null){
+					if(!entities.contains(entityColumn)){
+						entities.add(entityColumn);
+					}
+				}else{
+					if(!entities.contains(entityColumn)){
+						entities.add(entityColumn.substring(entityColumn.indexOf(currentFlag)+currentFlag.length()));
+					}
+				}
+			}
+		}
+		return entities;
+	}
+	
 	public QueryBody processQueryBodyTableCoumns(QueryBody q,Map<String,Map<String,String>> reNameTables){
 		List<String> entityColumns=q.getEntityColumns();
 		if(entityColumns!=null && entityColumns.size()>0){
