@@ -89,9 +89,12 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 			logger.warn("sql查询花费了:"+(sqlEndTime-sqlSatrtTime)+" ms");
 			data=processData(data,q);
 			long fromatEndTime=System.currentTimeMillis();
-			for(Map<String,Object> dataItem:data){
-				for(String deleteColumn:q.getDeleteColumns()){
-					dataItem.remove(deleteColumn.substring(deleteColumn.indexOf(".")+1));
+			List<String> deleteColumns=q.getDeleteColumns();
+			if(deleteColumns!=null && deleteColumns.size()>0){
+				for(Map<String,Object> dataItem:data){
+					for(String deleteColumn:deleteColumns){
+						dataItem.remove(deleteColumn.substring(deleteColumn.indexOf(".")+1));
+					}
 				}
 			}
 			logger.warn("格式化花费了:"+(fromatEndTime-sqlEndTime)+" ms");
