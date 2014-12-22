@@ -1,9 +1,7 @@
 package com.dboper.search.table;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,7 +11,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
 import com.dboper.search.config.TableColumnsConfig;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.dboper.search.util.FileUtil;
 
 public class TableColumnsService{
 	
@@ -35,9 +33,7 @@ public class TableColumnsService{
 			if(resources!=null && resources.length>0){
 				for(Resource resource:resources){
 					File file=resource.getFile();
-					InputStream in=new FileInputStream(file);
-					ObjectMapper mapper=new ObjectMapper();
-					Map<String,List<String>> tables=mapper.readValue(in,Map.class);
+					Map<String,List<String>> tables=FileUtil.getClassFromFile(file, Map.class);
 					tableColumns.putAll(tables);
 				}
 			}

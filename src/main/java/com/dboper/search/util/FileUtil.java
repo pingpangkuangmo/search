@@ -13,15 +13,30 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.IOUtils;
 import org.springframework.util.StringUtils;
 
-import com.dboper.search.domain.ActionQueryBody;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
 import com.dboper.search.domain.QueryBody;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class FileUtil {
+	
+	public  static <T> T getClassFromFile(File file,Class<T> clazz) throws FileNotFoundException, IOException{
+		return JSON.parseObject(getFileContent(file),clazz);
+	}
+	
+	public static <T> T getClassFromInputStream(InputStream in,Class<T> clazz) throws IOException{
+		return JSON.parseObject(getInputStreamContent(in),clazz);
+	}
+	
+	public static String getFileContent(File file) throws FileNotFoundException, IOException{
+		return getInputStreamContent(new FileInputStream(file));
+	}
+	
+	public static String getInputStreamContent(InputStream in) throws IOException{
+		return IOUtils.toString(in);
+	}
 
 	public static Map<String,QueryBody> getQueryBodyFromFile(File file){
 		return getQueryBodyFromFile(getInputStream(file));
@@ -33,15 +48,11 @@ public class FileUtil {
 			return ret;
 		}
 		try {
-			ObjectMapper mapper=new ObjectMapper();
-			ActionQueryBody actionQueryBody=mapper.readValue(in,ActionQueryBody.class);
+			String fileContent=getInputStreamContent(in);
+			Map<String,QueryBody> actionQueryBody=JSON.parseObject(fileContent,new TypeReference<Map<String,QueryBody>>(){});
 			for(String key:actionQueryBody.keySet()){
 				ret.put(key,actionQueryBody.get(key));
 			}
-		} catch (JsonParseException e) {
-			e.printStackTrace();
-		} catch (JsonMappingException e) {
-			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

@@ -24,9 +24,9 @@ import com.dboper.search.cache.EntityNameContext;
 import com.dboper.search.config.BaseTwoTablesRelationConfig;
 import com.dboper.search.domain.QueryBody;
 import com.dboper.search.table.TableColumnsModule;
+import com.dboper.search.util.FileUtil;
 import com.dboper.search.util.ListToStringUtil;
 import com.dboper.search.util.ListUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TablesRelationPropertyService{
 	
@@ -87,16 +87,14 @@ public class TablesRelationPropertyService{
 				tableConfigAndRelationtables.putAll(tablesAutoAndRelationTables);
 				for(Resource resource:mapResources){
 					File file=resource.getFile();
-					ObjectMapper mapper=new ObjectMapper();
-					tableConfigAndRelationtables.putAll(mapper.readValue(file,Map.class));
+					tableConfigAndRelationtables.putAll(FileUtil.getClassFromFile(file,Map.class));
 				}
 			}
 			Resource[] sonResources = resolver.getResources("classpath*:"+this.config.getSonTables()+"/*.json");
 			if(sonResources!=null && sonResources.length>0){
 				for(Resource resource:sonResources){
 					File file=resource.getFile();
-					ObjectMapper mapper=new ObjectMapper();
-					sonTables.putAll(mapper.readValue(file,Map.class));
+					sonTables.putAll(FileUtil.getClassFromFile(file, Map.class));
 				}
 			}
 		} catch (IOException e) {
