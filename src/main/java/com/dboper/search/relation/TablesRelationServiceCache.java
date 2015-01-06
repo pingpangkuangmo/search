@@ -75,7 +75,8 @@ public class TablesRelationServiceCache implements Bootstrap{
 	
 	public String getTablesRelation(QueryBody q) {
 		String relation="";
-		if(StringUtils.hasLength(q.getTablesPath())){
+		List<String> entities=q.getEntityColumns();
+		if(StringUtils.hasLength(q.getTablesPath()) || (entities!=null && entities.size()==1)){
 			relation=this.tablesRelationPropertyService.getRelation(q,tableColumnsModule);
 		}
 		if(StringUtils.hasLength(relation)){

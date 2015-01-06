@@ -27,6 +27,7 @@ import com.dboper.search.table.TableColumnsModule;
 import com.dboper.search.util.FileUtil;
 import com.dboper.search.util.ListToStringUtil;
 import com.dboper.search.util.ListUtil;
+import com.sun.xml.internal.ws.message.RelatesToHeader;
 
 public class TablesRelationPropertyService{
 	
@@ -189,7 +190,18 @@ public class TablesRelationPropertyService{
 		}
 	}
 
+	//需要优化下，对于只有一个entity时的查询（relation很简单，就是entity表名，然后就是处理附属表）
 	private String parseJoinStrRelation(QueryBody q,TableColumnsModule tableColumnsModule) {
+		List<String> entityColumns=q.getEntityColumns();
+		if(entityColumns!=null && entityColumns.size()==1){
+			tableColumnsModule.processQueryBodyTableCoumns(q,null);
+			StringBuilder sb=new StringBuilder();
+			String entity=entityColumns.get(0);
+			sb.append(config.getTablePrefix()+entity);
+			//添加附属表
+			addSonTables(entity,entity,sb,new ArrayList<String>(),null);
+			return sb.toString();
+		}
 		HashMap<String,Map<String,Map<String,String>>> joinStrChangeTables=new HashMap<String,Map<String,Map<String,String>>>();
 		String joinStr=q.getTablesPath();
 		List<String> allTables=new ArrayList<String>();
@@ -244,18 +256,8 @@ public class TablesRelationPropertyService{
 			}
 			
 			//当有多个重复表出现的时候，就出bug了
-			String prefix=" ";
-			if(i==0){
-				prefix="";
-			}else{
-				prefix=" ";
-			}
-			String sub=" ";
-			if(i==len-2){
-				sub="";
-			}else{
-				sub=" ";
-			}
+			String prefix=i==0?"":" ";
+			String sub=i==len-2?"":" ";
 			Pattern pattern=Pattern.compile(prefix+tableOne+"\\s+(left join)?(right join)?(join)?\\s+"+tableTwo+sub);
 			Matcher matcher=pattern.matcher(joinStr);
 			String target=null;
