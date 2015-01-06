@@ -27,7 +27,6 @@ import com.dboper.search.table.TableColumnsModule;
 import com.dboper.search.util.FileUtil;
 import com.dboper.search.util.ListToStringUtil;
 import com.dboper.search.util.ListUtil;
-import com.sun.xml.internal.ws.message.RelatesToHeader;
 
 public class TablesRelationPropertyService{
 	
