@@ -51,19 +51,22 @@ public class TableColumnsModule {
 		return entities;
 	}
 	
+	public List<String> getFullEntity(QueryBody q){
+		return q.getEntityColumns();
+	}
+	
 	public QueryBody processQueryBodyTableCoumns(QueryBody q,Map<String,Map<String,String>> reNameTables){
 		List<String> entityColumns=q.getEntityColumns();
 		if(entityColumns!=null && entityColumns.size()>0){
 			List<String> columns=new ArrayList<String>();
 			columns.clear();
 			String fatherEntity=null;
-			boolean haveSons=false;
 			for(String entity:entityColumns){
 				String currentFlag=null;
 				for(String flag:flags){
 					if(entity.contains(flag)){
 						if("@list".equals(flag)){
-							haveSons=true;
+							q.setHasSon(true);
 						}
 						currentFlag=flag;
 						break;
@@ -71,13 +74,16 @@ public class TableColumnsModule {
 				}
 				if(currentFlag==null){
 					fatherEntity=entity;
+					q.setFatherEntity(fatherEntity);
 					List<String> currentColumns=getColumns(entity);
 					columns.addAll(currentColumns);
 				}else{
 					String[] parts=splitTwo(entity,currentFlag);
 					List<String> currentColumns=getColumns(parts[1]);
 					for(String currentColumn:currentColumns){
-						currentColumn=processRenameTable(currentColumn,reNameTables.get(parts[1]));
+						if(reNameTables!=null){
+							currentColumn=processRenameTable(currentColumn,reNameTables.get(parts[1]));
+						}
 						if(currentColumn.contains(" as ")){
 							String[] tableColumnAs=splitTwo(currentColumn," as ");
 							columns.add(tableColumnAs[0]+" as `"+parts[0]+currentFlag+tableColumnAs[1]+"`");
@@ -88,18 +94,24 @@ public class TableColumnsModule {
 					}
 				}
 			}
-			List<String> groupColumns=q.getGroupColumns();
-			if(haveSons && fatherEntity!=null && groupColumns.size()==0){
-				String fatherIdColumn=fatherEntity+".id";
-				if(!columns.contains(fatherIdColumn)){
-					columns.add(fatherIdColumn);
-					q.getDeleteColumns().add(fatherIdColumn);
-				}
-				groupColumns.add(fatherIdColumn);
-			}
 			q.setColumns(columns);
+			addGroupColumns(q);
 		}
 		return q;
+	}
+	
+	public void addGroupColumns(QueryBody q){
+		List<String> columns=q.getColumns();
+		List<String> groupColumns=q.getGroupColumns();
+		String fatherEntity=q.getFatherEntity();
+		if(q.isHasSon() && fatherEntity!=null && groupColumns.size()==0){
+			String fatherIdColumn=fatherEntity+".id";
+			if(!columns.contains(fatherIdColumn)){
+				columns.add(fatherIdColumn);
+				q.getDeleteColumns().add(fatherIdColumn);
+			}
+			groupColumns.add(fatherIdColumn);
+		}
 	}
 	
 	private String processRenameTable(String currentColumn,Map<String,String> reNameTables) {

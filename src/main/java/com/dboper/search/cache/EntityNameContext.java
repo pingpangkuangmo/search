@@ -8,7 +8,25 @@ public class EntityNameContext extends HashMap<String,Object>{
 	private static final long serialVersionUID = 6374704626585922875L;
 	private static final String RELATION="relation";
 	private static final String COLUMNS="columns";
+	private static final String HAS_SON="hasSon";
+	private static final String FATHER_ENTITY="fatherEntity";
 	
+	public String getFatherEntity(){
+		return (String) get(FATHER_ENTITY);
+	}
+	
+	public void setFatherEntity(String fatherEntity){
+		put(FATHER_ENTITY, fatherEntity);
+	}
+	
+	public boolean getHasSon(){
+		return (Boolean)get(HAS_SON);
+	}
+	
+	public void setHasSon(boolean hasSon){
+		put(HAS_SON,hasSon);
+	}
+
 	public String getRelation() {
 		return (String)get(RELATION);
 	}

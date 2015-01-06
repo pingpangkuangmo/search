@@ -21,6 +21,10 @@ public class QueryBody implements Cloneable{
 	private List<String> entityColumns=new ArrayList<String>();
 	private List<String> deleteColumns=new ArrayList<String>();
 	
+	//传输数据用，不用于查询配置
+	private boolean hasSon=false;
+	private String fatherEntity;
+	
 	public QueryBody() {
 		super();
 	}
@@ -28,6 +32,22 @@ public class QueryBody implements Cloneable{
 	@Override
 	public QueryBody clone() throws CloneNotSupportedException {
 		return (QueryBody)super.clone();
+	}
+	
+	public String getFatherEntity() {
+		return fatherEntity;
+	}
+
+	public void setFatherEntity(String fatherEntity) {
+		this.fatherEntity = fatherEntity;
+	}
+
+	public boolean isHasSon() {
+		return hasSon;
+	}
+
+	public void setHasSon(boolean hasSon) {
+		this.hasSon = hasSon;
 	}
 
 	public List<String> getDeleteColumns() {

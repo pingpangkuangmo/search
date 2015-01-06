@@ -57,6 +57,8 @@ public class TablesRelationPropertyService{
 	
 	private final Log logger = LogFactory.getLog(getClass());
 	
+	private static final String MANY_RELATION_FLAG="_as_";
+	
 	public TablesRelationPropertyService(BaseTwoTablesRelationConfig config){
 		this.config=config;
 	}
@@ -136,7 +138,7 @@ public class TablesRelationPropertyService{
 		if(entityNamesData==null){
 			logger.warn("entityNames的cacheKey:"+cachekey+" 还没有缓存");
 			String relation=parseJoinStrRelation(q,tableColumnsModule);
-			addCache(cachekey,q.getTablesPath(), relation,q.getColumns());
+			addCache(cachekey,q.getTablesPath(),relation,q.getColumns(),q.isHasSon(),q.getFatherEntity());
 			logger.warn("entityNames的cacheKey:"+cachekey+" 添加到缓存");
 			return relation;
 		}else{
@@ -144,39 +146,46 @@ public class TablesRelationPropertyService{
 			if(entityNameContext==null){
 				logger.warn("entityNames的cacheKey:"+cachekey+" 命中缓存，但是没有符合tablePath="+q.getTablesPath()+"的数据");
 				String relation=parseJoinStrRelation(q,tableColumnsModule);
-				addCache(q.getTablesPath(),relation,q.getColumns(),entityNamesData);
+				addCache(q.getTablesPath(),relation,q.getColumns(),entityNamesData,q.isHasSon(),q.getFatherEntity());
 				return relation;
 			}else{
 				logger.warn("entityNames的cacheKey:"+cachekey+" 命中缓存，同时有tablePath="+q.getTablesPath()+"的数据，所以直接使用缓存");
 				q.setColumns(entityNameContext.getColumns());
+				q.setHasSon(entityNameContext.getHasSon());
+				q.setFatherEntity(entityNameContext.getFatherEntity());
+				tableColumnsModule.addGroupColumns(q);
 				return entityNameContext.getRelation();
 			}
 		}
 	}
 	
-	private void addCache(String tablePath,String relation, List<String> columns,Map<String,EntityNameContext> entityNamesData) {
+	private void addCache(String tablePath,String relation, List<String> columns,Map<String,EntityNameContext> entityNamesData,boolean hasSon,String fatherEntity) {
 		EntityNameContext entityNameContext=new EntityNameContext();
 		entityNameContext.setColumns(columns);
 		entityNameContext.setRelation(relation);
+		entityNameContext.setHasSon(hasSon);
+		entityNameContext.setFatherEntity(fatherEntity);
 		entityNamesData.put(tablePath,entityNameContext);
 	}
 
-	private void addCache(String cachekey,String tablePath,String relation,List<String> columns){
+	private void addCache(String cachekey,String tablePath,String relation,List<String> columns,boolean hasSon,String fatherEntity){
 		Map<String,EntityNameContext> currentData=new HashMap<String,EntityNameContext>();
 		EntityNameContext entityNameContext=new EntityNameContext();
 		entityNameContext.setRelation(relation);
 		entityNameContext.setColumns(columns);
+		entityNameContext.setHasSon(hasSon);
+		entityNameContext.setFatherEntity(fatherEntity);
 		currentData.put(tablePath,entityNameContext);
 		entityNameCache.put(cachekey,currentData);
 	}
 
 	private String getEntityNames(QueryBody q,TableColumnsModule tableColumnsModule) {
-		List<String> entities=tableColumnsModule.getEntity(q);
-		if(entities.size()<0){
+		List<String> entities=tableColumnsModule.getFullEntity(q);
+		if(entities==null || entities.size()<0){
 			return "";
 		}else{
 			Collections.sort(entities);
-			return ListToStringUtil.arrayToString(entities,"__");
+			return ListToStringUtil.arrayToString(entities,"__")+q.getTablesPath();
 		}
 	}
 
@@ -195,7 +204,7 @@ public class TablesRelationPropertyService{
 		sb.append(firstTable);
 		allTables.add(firstTable);
 		List<String> list=new ArrayList<String>();
-		addSonTables(tables[0], joinStr, sb, allTables, joinStrChangeTables);
+		addSonTables(tables[0], joinStr, sb, allTables,joinStrChangeTables);
 		for(int i=0,len=tables.length;i<len-1;i++){
 			String tableOne=tables[i].trim();
 			String tableTwo=tables[i+1].trim();
@@ -285,7 +294,16 @@ public class TablesRelationPropertyService{
 			return ;
 		}
 		for(String son:sonTable){
-			appendRelation(joinStr,sb,son,table,baseTwoTablesRelation.get(getSortStr(table,son,new ArrayList<String>())),"left join", allTables, joinStrChangeTables);
+			String relation=baseTwoTablesRelation.get(getSortStr(table,son,new ArrayList<String>()));
+			if(son.contains(MANY_RELATION_FLAG)){
+				String[] parts=son.split(MANY_RELATION_FLAG);
+				if(parts.length==2){
+					relation=addRelationTablePrefix(relation,table,parts[1]);
+					addReNameTable(sb,"left join",parts[0],parts[1],relation);
+				}
+			}else{
+				appendRelation(joinStr,sb,son,table,relation,"left join", allTables, joinStrChangeTables);
+			}
 		}
 	}
 
@@ -306,17 +324,60 @@ public class TablesRelationPropertyService{
 			}
 			String reNameTable=table+"_"+tableLeft+"ReName";
 			statusRenames.put(table,reNameTable);
-			relation=relation.replaceAll(table+"\\.",config.getTablePrefix()+reNameTable+".");
-			relation=relation.replaceAll(tableLeft+"\\.",config.getTablePrefix()+tableLeft+".");
-			sb.append(" ").append(joinType).append(" ").append(config.getTablePrefix()+table).append(" ").append(config.getTablePrefix()+reNameTable)
-						.append(" on ").append(relation);
+			relation=addRelationReNameTablePrefix(relation,tableLeft,table,reNameTable);
+			addReNameTable(sb, joinType, table, reNameTable, relation);
 			//字段的重命名,放到分析完成之后一起做
 		}else{
 			allTables.add(table);
-			relation=relation.replaceAll(table+"\\.",config.getTablePrefix()+table+".");
-			relation=relation.replaceAll(tableLeft+"\\.",config.getTablePrefix()+tableLeft+".");
-			sb.append(" ").append(joinType).append(" ").append(config.getTablePrefix()+table).append(" on ").append(relation);
+			String newTableLeft=tableLeft;
+			if(tableLeft.contains(MANY_RELATION_FLAG)){
+				String[] parts=tableLeft.split(MANY_RELATION_FLAG);
+				if(parts.length==2){
+					newTableLeft=parts[1];
+				}
+			}
+			if(table.contains(MANY_RELATION_FLAG)){
+				String[] parts=table.split(MANY_RELATION_FLAG);
+				if(parts.length==2){
+					relation=addRelationTablePrefix(relation,newTableLeft,parts[1]);
+					addReNameTable(sb,joinType,parts[0],parts[1], relation);
+				}
+			}else{
+				relation=addRelationTablePrefix(relation,table,newTableLeft);
+				sb.append(" ").append(joinType).append(" ").append(config.getTablePrefix()+table).append(" on ").append(relation);
+			}
 		}
+	}
+	
+	private String addRelationReNameTablePrefix(String relation,String leftTable,String oldTable,String reNameTable){
+		relation=config.getTablePrefix()+relation.trim();
+		relation=_addRelationTablePrefix(relation,leftTable);
+		relation=_addRelationReNameTablePrefix(relation,oldTable,reNameTable);
+		return relation;
+	}
+	
+	private String addRelationTablePrefix(String relation,String leftTable,String table){
+		relation=config.getTablePrefix()+relation.trim();
+		relation=_addRelationTablePrefix(relation, table);
+		relation=_addRelationTablePrefix(relation, leftTable);
+		return relation;
+	}
+	
+	private String _addRelationTablePrefix(String relation,String table){
+		relation=relation.replaceAll("="+table+"\\.","="+config.getTablePrefix()+table+".");
+		relation=relation.replaceAll("\\s"+table+"\\."," "+config.getTablePrefix()+table+".");
+		return relation;
+	}
+	
+	private String _addRelationReNameTablePrefix(String relation,String oldTable,String reNameTable){
+		relation=relation.replaceAll("="+oldTable+"\\.","="+config.getTablePrefix()+reNameTable+".");
+		relation=relation.replaceAll("\\s"+oldTable+"\\."," "+config.getTablePrefix()+reNameTable+".");
+		return relation;
+	}
+	
+	private void addReNameTable(StringBuilder sb,String joinType,String originTable,String newTable,String relation){
+		sb.append(" ").append(joinType).append(" ").append(config.getTablePrefix()+originTable).append(" ").append(config.getTablePrefix()+newTable)
+		.append(" on ").append(relation);
 	}
 	
 	private String getSortStr(String tableOne,String tableTwo,List<String> list){
