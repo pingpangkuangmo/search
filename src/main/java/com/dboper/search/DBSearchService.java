@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import com.dboper.search.config.Configuration;
+import com.dboper.search.domain.PageQueryBody;
+import com.dboper.search.domain.PageResult;
 import com.dboper.search.domain.QueryBody;
 import com.dboper.search.format.ProcessUnit;
 import com.dboper.search.format.form.UnionFormFormatter;
@@ -77,6 +79,21 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 	public void refreshTablesRelationFromDB(){
 		sqlService.initTablesRelationFromDB();
 	}
+	
+	public PageResult selectPage(PageQueryBody q){
+		PageResult pageResult=new PageResult();
+		pageResult.setStart(q.getStart());
+		pageResult.setLimit(q.getLimit());
+		QueryBody queryBody=q.getQ();
+		String sql=sqlService.getSql(queryBody);
+		if(StringUtils.hasLength(sql)){
+			String countSql="select count(*) from ("+sql+") tmp";
+			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql);
+			pageResult.setTotal(config.getJdbcTemplate().queryForObject(countSql,Integer.class));
+			pageResult.setData(process(data,queryBody));
+		}
+		return pageResult;
+	}
 
 	public List<Map<String,Object>> select(QueryBody q){
 		long sqlParseStartTime=System.currentTimeMillis();
@@ -87,21 +104,23 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql);
 			long sqlEndTime=System.currentTimeMillis();
 			logger.warn("sql查询花费了:"+(sqlEndTime-sqlSatrtTime)+" ms");
-			data=processData(data,q);
-			long fromatEndTime=System.currentTimeMillis();
-			List<String> deleteColumns=q.getDeleteColumns();
-			if(deleteColumns!=null && deleteColumns.size()>0){
-				for(Map<String,Object> dataItem:data){
-					for(String deleteColumn:deleteColumns){
-						dataItem.remove(deleteColumn.substring(deleteColumn.indexOf(".")+1));
-					}
-				}
-			}
-			logger.warn("格式化花费了:"+(fromatEndTime-sqlEndTime)+" ms");
-			return data;
+			return process(data,q);
 		}else{
 			return new ArrayList<Map<String,Object>>();
 		}
+	}
+	
+	private List<Map<String,Object>> process(List<Map<String, Object>> data,QueryBody q){
+		data=processData(data,q);
+		List<String> deleteColumns=q.getDeleteColumns();
+		if(deleteColumns!=null && deleteColumns.size()>0){
+			for(Map<String,Object> dataItem:data){
+				for(String deleteColumn:deleteColumns){
+					dataItem.remove(deleteColumn.substring(deleteColumn.indexOf(".")+1));
+				}
+			}
+		}
+		return data;
 	}
 	
 	public Map<String,Object> selectOne(QueryBody q){

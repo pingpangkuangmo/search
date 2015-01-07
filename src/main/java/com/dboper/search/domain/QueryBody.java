@@ -13,7 +13,7 @@ public class QueryBody implements Cloneable{
 	private Map<String,Object> params=new HashMap<String,Object>();;
 	private String order_by="";
 	private int limit;
-	private boolean distinct=false;
+	private boolean distinct=true;
 	private String action;
 	private List<String> groupColumns=new ArrayList<String>();
 	private List<ValueFormatterRule> format=new ArrayList<ValueFormatterRule>();
