@@ -87,9 +87,14 @@ public class SqlService implements Bootstrap{
 			sql.append(" order by ");
 			sql.append(tablePrefix+order_by);
 		}
-		int limit=q.getLimit();
-		if(limit>0){
-			sql.append(" limit ").append(limit);
+		Integer limit=q.getLimit();
+		if(limit!=null && limit>0){
+			Integer start=q.getStart();
+			if(start!=null && start>0){
+				sql.append(" limit "+start+","+limit);
+			}else{
+				sql.append(" limit ").append(limit);
+			}
 		}
 		String sqlStr=sql.toString();
 		logger.info(sqlStr);

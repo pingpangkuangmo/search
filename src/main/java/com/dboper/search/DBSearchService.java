@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import com.dboper.search.config.Configuration;
-import com.dboper.search.domain.PageQueryBody;
 import com.dboper.search.domain.PageResult;
 import com.dboper.search.domain.QueryBody;
 import com.dboper.search.format.ProcessUnit;
@@ -80,17 +79,18 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 		sqlService.initTablesRelationFromDB();
 	}
 	
-	public PageResult selectPage(PageQueryBody q){
+	public PageResult selectPage(QueryBody q){
 		PageResult pageResult=new PageResult();
 		pageResult.setStart(q.getStart());
 		pageResult.setLimit(q.getLimit());
-		QueryBody queryBody=q.getQ();
-		String sql=sqlService.getSql(queryBody);
+		q.setStart(null);
+		q.setLimit(null);
+		String sql=sqlService.getSql(q);
 		if(StringUtils.hasLength(sql)){
 			String countSql="select count(*) from ("+sql+") tmp";
-			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql);
+			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql+" limit "+pageResult.getStart()+","+pageResult.getLimit());
 			pageResult.setTotal(config.getJdbcTemplate().queryForObject(countSql,Integer.class));
-			pageResult.setData(process(data,queryBody));
+			pageResult.setData(process(data,q));
 		}
 		return pageResult;
 	}

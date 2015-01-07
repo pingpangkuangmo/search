@@ -12,7 +12,8 @@ public class QueryBody implements Cloneable{
 	private List<String> columns=new ArrayList<String>();
 	private Map<String,Object> params=new HashMap<String,Object>();;
 	private String order_by="";
-	private int limit;
+	private Integer limit=Integer.MAX_VALUE;
+	private Integer start=0;
 	private boolean distinct=true;
 	private String action;
 	private List<String> groupColumns=new ArrayList<String>();
@@ -132,12 +133,20 @@ public class QueryBody implements Cloneable{
 		this.order_by = order_by;
 	}
 
-	public int getLimit() {
+	public Integer getLimit() {
 		return limit;
 	}
 
-	public void setLimit(int limit) {
+	public void setLimit(Integer limit) {
 		this.limit = limit;
+	}
+
+	public Integer getStart() {
+		return start;
+	}
+
+	public void setStart(Integer start) {
+		this.start = start;
 	}
 
 	public boolean isDistinct() {
