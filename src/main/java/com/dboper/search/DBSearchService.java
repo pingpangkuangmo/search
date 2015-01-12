@@ -87,8 +87,18 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 		q.setLimit(null);
 		String sql=sqlService.getSql(q);
 		if(StringUtils.hasLength(sql)){
-			String countSql="select count(*) from ("+sql+") tmp";
-			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql+" limit "+pageResult.getStart()+","+pageResult.getLimit());
+			String countSql="select count(1) from ("+sql+") tmp";
+			Integer start=pageResult.getStart();
+			if(start==null || start<0){
+				start=0;
+				pageResult.setStart(start);
+			}
+			Integer limit=pageResult.getLimit();
+			if(limit==null || limit<0){
+				limit=Integer.MAX_VALUE;
+				pageResult.setLimit(limit);
+			}
+			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql+" limit "+start+","+limit);
 			pageResult.setTotal(config.getJdbcTemplate().queryForObject(countSql,Integer.class));
 			pageResult.setData(process(data,q));
 		}
