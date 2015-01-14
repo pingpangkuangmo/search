@@ -134,7 +134,7 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 	}
 	
 	public Map<String,Object> selectOne(QueryBody q){
-		return select(q).get(0);
+		return getOne(select(q));
 	}
 	
 	public List<Map<String,Object>> select(String action,Map<String,Object> params){
@@ -162,7 +162,7 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 	}
 	
 	public Map<String,Object> selectOne(String action,Map<String,Object> params){
-		return select(action, params).get(0);
+		return getOne(select(action, params));
 	}
 
 	public List<Map<String,Object>> select(String action){
@@ -170,7 +170,14 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 	}
 	
 	public Map<String,Object> selectOne(String action){
-		return select(action).get(0);
+		return getOne(select(action));
+	}
+	
+	private Map<String,Object> getOne(List<Map<String,Object>> data){
+		if(data!=null && data.size()>0){
+			return data.get(0);
+		}
+		return null;
 	}
 
 	private List<Map<String, Object>> processData(List<Map<String, Object>> data, QueryBody q) {
