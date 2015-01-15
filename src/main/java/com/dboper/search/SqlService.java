@@ -163,9 +163,12 @@ public class SqlService implements Bootstrap{
 			obj="'"+obj+"'";
 		}
 		if(obj!=null && (obj instanceof Collection || obj instanceof Array)){
+			List<Object> newObj=new ArrayList<Object>();
 			for(Object item:(Iterable)obj){
 				if(item instanceof String){
-					item="'"+item+"'";
+					newObj.add("'"+item+"'");
+				}else{
+					newObj.add(item);
 				}
 			}
 		}
