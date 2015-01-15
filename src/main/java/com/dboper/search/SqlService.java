@@ -171,6 +171,7 @@ public class SqlService implements Bootstrap{
 					newObj.add(item);
 				}
 			}
+			obj=newObj;
 		}
 		return obj;
 	}
