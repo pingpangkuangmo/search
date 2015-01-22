@@ -120,6 +120,14 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 		}
 	}
 	
+	public List<Map<String,Object>> selectSql(String sql){
+		if(StringUtils.hasLength(sql)){
+			return config.getJdbcTemplate().queryForList(sql);
+		}else{
+			return new ArrayList<Map<String,Object>>();
+		}
+	}
+	
 	private List<Map<String,Object>> process(List<Map<String, Object>> data,QueryBody q){
 		data=processData(data,q);
 		List<String> deleteColumns=q.getDeleteColumns();
