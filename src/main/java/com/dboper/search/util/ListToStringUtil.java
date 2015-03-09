@@ -16,7 +16,11 @@ public class ListToStringUtil {
 	public static String arrayToStringAliases(List<String> list,String join,String tablePrefix){
 		StringBuilder str=new StringBuilder();
 		for(String obj:list){
-			str.append(tablePrefix+obj+join);
+			if(GroupByUtils.containsGroupKey(obj)){
+				str.append(obj+join);
+			}else{
+				str.append(tablePrefix+obj+join);
+			}
 		}
 		str.delete(str.length()-join.length(),str.length());
 		return str.toString();

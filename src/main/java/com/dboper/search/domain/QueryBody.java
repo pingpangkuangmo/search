@@ -21,6 +21,7 @@ public class QueryBody implements Cloneable{
 	private String tablesPath;
 	private List<String> entityColumns=new ArrayList<String>();
 	private List<String> deleteColumns=new ArrayList<String>();
+	private String groupBy;
 	
 	//传输数据用，不用于查询配置
 	private boolean hasSon=false;
@@ -35,6 +36,14 @@ public class QueryBody implements Cloneable{
 		return (QueryBody)super.clone();
 	}
 	
+	public String getGroupBy() {
+		return groupBy;
+	}
+
+	public void setGroupBy(String groupBy) {
+		this.groupBy = groupBy;
+	}
+
 	public String getFatherEntity() {
 		return fatherEntity;
 	}

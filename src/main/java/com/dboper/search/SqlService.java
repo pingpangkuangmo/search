@@ -82,10 +82,18 @@ public class SqlService implements Bootstrap{
 			sql.append(" where ");
 			sql.append(getParamsByHandlers(params,"and"));
 		}
+		String groupBy=q.getGroupBy();
+		if(StringUtils.hasLength(groupBy)){
+			sql.append(" group by ").append(tablePrefix).append(groupBy).append(" ");
+		}
 		String order_by=q.getOrder_by();
 		if(order_by!=null && !order_by.trim().equals("")){
 			sql.append(" order by ");
-			sql.append(tablePrefix+order_by);
+			if(!order_by.contains(".")){
+				sql.append(order_by);
+			}else{
+				sql.append(tablePrefix+order_by);
+			}
 		}
 		Integer limit=q.getLimit();
 		if(limit!=null && limit>0){

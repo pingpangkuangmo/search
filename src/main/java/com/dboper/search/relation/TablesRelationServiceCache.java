@@ -17,6 +17,7 @@ import com.dboper.search.Bootstrap;
 import com.dboper.search.config.Configuration;
 import com.dboper.search.domain.QueryBody;
 import com.dboper.search.table.TableColumnsModule;
+import com.dboper.search.util.GroupByUtils;
 import com.dboper.search.util.MapUtil;
 import com.dboper.search.util.TablesRelationUtil;
 
@@ -171,6 +172,9 @@ public class TablesRelationServiceCache implements Bootstrap{
 	}
 
 	private void addTable(String key,List<String> tables){
+		if(GroupByUtils.containsGroupKey(key)){
+			return;
+		}
 		String[] parts=key.split("\\.");
 		if(!(tables.contains(parts[0]))){
 			tables.add(parts[0]);
