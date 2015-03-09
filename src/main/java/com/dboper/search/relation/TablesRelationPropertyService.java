@@ -18,6 +18,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
+import org.springframework.util.StringUtils;
 
 import com.dboper.search.cache.EntityNameCache;
 import com.dboper.search.cache.EntityNameContext;
@@ -138,8 +139,11 @@ public class TablesRelationPropertyService{
 		if(entityNamesData==null){
 			logger.warn("entityNames的cacheKey:"+cachekey+" 还没有缓存");
 			String relation=parseJoinStrRelation(q,tableColumnsModule);
-			addCache(cachekey,q.getTablesPath(),relation,q.getColumns(),q.isHasSon(),q.getFatherEntity());
-			logger.warn("entityNames的cacheKey:"+cachekey+" 添加到缓存");
+			if(StringUtils.hasLength(relation)){
+				//成功找到，添加到缓存
+				addCache(cachekey,q.getTablesPath(),relation,q.getColumns(),q.isHasSon(),q.getFatherEntity());
+				logger.warn("entityNames的cacheKey:"+cachekey+" 添加到缓存");
+			}
 			return relation;
 		}else{
 			EntityNameContext entityNameContext=entityNamesData.get(q.getTablesPath());
@@ -201,8 +205,17 @@ public class TablesRelationPropertyService{
 			addSonTables(entity,entity,sb,new ArrayList<String>(),null);
 			return sb.toString();
 		}
-		HashMap<String,Map<String,Map<String,String>>> joinStrChangeTables=new HashMap<String,Map<String,Map<String,String>>>();
 		String joinStr=q.getTablesPath();
+		if(!StringUtils.hasLength(joinStr)){
+			//用户没有指定tablesPath，需要自动根据entity列表和已经配置的relation来进行自动判断，如果没有找到，不处理，此时连接形式默认都处理成  inner join
+			String computerTablesPath=computer(entityColumns);
+			if(!StringUtils.hasLength(computerTablesPath)){
+				return "";
+			}
+			joinStr=computerTablesPath;
+			q.setTablesPath(computerTablesPath);
+		}
+		HashMap<String,Map<String,Map<String,String>>> joinStrChangeTables=new HashMap<String,Map<String,Map<String,String>>>();
 		List<String> allTables=new ArrayList<String>();
 		String tmp=joinStr.replaceAll("left","");
 		tmp=tmp.replaceAll("right","");
@@ -286,6 +299,29 @@ public class TablesRelationPropertyService{
 		String fullRelation=sb.toString();
 		tablesRelationParseResult.put(joinStr,fullRelation);
 		return fullRelation;
+	}
+
+	//这一块需要单独独立出来，形成算法处理
+	private String computer(List<String> entityColumns) {
+		if(entityColumns!=null && entityColumns.size()==2){
+			//先简单点，只处理有两个entity的情况
+			String firstTable=entityColumns.get(0);
+			String secondTable=entityColumns.get(1);
+			List<String> firstRelations=tableConfigAndRelationtables.get(firstTable);
+			List<String> secondRelations=tableConfigAndRelationtables.get(secondTable);
+			if(firstRelations==null || secondRelations==null){
+				return "";
+			}
+			List<String> intersection=ListUtil.intersection(firstRelations,secondRelations);
+			if(intersection.size()>0){
+				return firstTable+" join "+secondTable;
+			}
+			//需要继续不断地扩张，因为他们的级联关系可能有好几级
+			StringBuilder sb=new StringBuilder();
+			
+			return "";
+		}
+		return "";
 	}
 
 	private void addSonTables(String table,String joinStr,StringBuilder sb,List<String> allTables,HashMap<String,Map<String,Map<String,String>>> joinStrChangeTables) {
