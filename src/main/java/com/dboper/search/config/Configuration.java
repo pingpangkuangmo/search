@@ -35,6 +35,8 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	
 	private String sonTables="sonTables";
 	
+	private String tablesPath="tablesPath";
+	
 	private boolean monitorQueryFile=false;
 	
 	private boolean monitorRelationFile=false;
@@ -146,6 +148,11 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	@Override
 	public String getTableColumnsDir() {
 		return tableColumnsDir;
+	}
+
+	@Override
+	public String getTablesPathConfig() {
+		return tablesPath;
 	}
 	
 }

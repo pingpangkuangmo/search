@@ -51,6 +51,8 @@ public class TablesRelationPropertyService{
 	
 	private ConcurrentHashMap<String,String> tablesRelationParseResult=new ConcurrentHashMap<String,String>();
 	
+	private ConcurrentHashMap<String,String> twoTablesTablesPath=new ConcurrentHashMap<String,String>();
+	
 	
 	ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 	
@@ -100,9 +102,35 @@ public class TablesRelationPropertyService{
 					sonTables.putAll(FileUtil.getClassFromFile(file, Map.class));
 				}
 			}
+			Resource[] tablesPathResources = resolver.getResources("classpath*:"+this.config.getTablesPathConfig()+"/*.txt");
+			if(tablesPathResources!=null && tablesPathResources.length>0){
+				for(Resource resource:tablesPathResources){
+					File file=resource.getFile();
+					BufferedReader bufferedReader=new BufferedReader(new FileReader(file));
+					String lineStr=bufferedReader.readLine();
+					while(lineStr!=null){
+						if(lineStr.length()>0){
+							parseLineTablesPath(lineStr,twoTablesTablesPath);
+						}
+						lineStr=bufferedReader.readLine();
+					}
+					bufferedReader.close();
+				}
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}  
+	}
+
+	private void parseLineTablesPath(String lineStr,ConcurrentHashMap<String, String> twoTablesTablesPath) {
+		String[] parts=lineStr.split(",");
+		if(parts.length==3){
+			List<String> tables=new ArrayList<String>();
+			tables.add(parts[0]);
+			tables.add(parts[1]);
+			Collections.sort(tables);
+			twoTablesTablesPath.put(tables.get(0)+"__"+tables.get(1),parts[2]);
+		}
 	}
 
 	private void parseLine(String lineStr,HashMap<String,List<String>> tablesAutoAndRelationTables) {
@@ -208,7 +236,7 @@ public class TablesRelationPropertyService{
 		String joinStr=q.getTablesPath();
 		if(!StringUtils.hasLength(joinStr)){
 			//用户没有指定tablesPath，需要自动根据entity列表和已经配置的relation来进行自动判断，如果没有找到，不处理，此时连接形式默认都处理成  inner join
-			String computerTablesPath=computer(entityColumns);
+			String computerTablesPath=computer(q,tableColumnsModule);
 			if(!StringUtils.hasLength(computerTablesPath)){
 				return "";
 			}
@@ -302,13 +330,24 @@ public class TablesRelationPropertyService{
 	}
 
 	//这一块需要单独独立出来，形成算法处理
-	private String computer(List<String> entityColumns) {
+	private String computer(QueryBody q,TableColumnsModule tableColumnsModule) {
+		//过滤下entityColumns中的@list @map等元素，找出其中真正的实体
+		List<String> entityColumns=tableColumnsModule.getEntity(q);
 		if(entityColumns!=null && entityColumns.size()==2){
-			//先简单点，只处理有两个entity的情况
+			////先简单点，只处理有两个entity的情况,分成两种情况，用户直接配置了和自动计算
+			Collections.sort(entityColumns);
+			String tablesPath=twoTablesTablesPath.get(entityColumns.get(0)+"__"+entityColumns.get(1));
+			if(tablesPath!=null){
+				//这里找到了用户配置的两个表之间的连接关系
+				return tablesPath;
+			}
+			//下面的就应该是算法自动去计算两个表的连接关系
 			String firstTable=entityColumns.get(0);
 			String secondTable=entityColumns.get(1);
 			List<String> firstRelations=tableConfigAndRelationtables.get(firstTable);
 			List<String> secondRelations=tableConfigAndRelationtables.get(secondTable);
+			firstRelations.add(firstTable);
+			secondRelations.add(secondTable);
 			if(firstRelations==null || secondRelations==null){
 				return "";
 			}
@@ -317,8 +356,7 @@ public class TablesRelationPropertyService{
 				return firstTable+" join "+secondTable;
 			}
 			//需要继续不断地扩张，因为他们的级联关系可能有好几级
-			StringBuilder sb=new StringBuilder();
-			
+			//StringBuilder sb=new StringBuilder();
 			return "";
 		}
 		return "";

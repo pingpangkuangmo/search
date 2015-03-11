@@ -35,6 +35,7 @@ public class TableColumnsModule {
 				for(String flag:flags){
 					if(entityColumn.contains(flag)){
 						currentFlag=flag;
+						break;
 					}
 				}
 				if(currentFlag==null){

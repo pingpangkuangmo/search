@@ -5,4 +5,6 @@ public interface BaseTwoTablesRelationConfig extends TablePrefix{
 	public String getBaseTwoTablesRelation();
 	
 	public String getSonTables();
+	
+	public String getTablesPathConfig();
 }
