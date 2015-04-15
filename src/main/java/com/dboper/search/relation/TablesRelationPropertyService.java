@@ -169,8 +169,10 @@ public class TablesRelationPropertyService{
 			String relation=parseJoinStrRelation(q,tableColumnsModule);
 			if(StringUtils.hasLength(relation)){
 				//成功找到，添加到缓存
-				addCache(cachekey,q.getTablesPath(),relation,q.getColumns(),q.isHasSon(),q.getFatherEntity());
-				logger.warn("entityNames的cacheKey:"+cachekey+" 添加到缓存");
+				if(!cachekey.endsWith("_no_cache")){
+					addCache(cachekey,q.getTablesPath(),relation,q.getColumns(),q.isHasSon(),q.getFatherEntity());
+					logger.warn("entityNames的cacheKey:"+cachekey+" 添加到缓存");
+				}
 			}
 			return relation;
 		}else{
@@ -216,6 +218,9 @@ public class TablesRelationPropertyService{
 		if(entities==null || entities.size()<0){
 			return "";
 		}else{
+			if(entities.size()==0){
+				return System.currentTimeMillis()+"_no_cache";
+			}
 			Collections.sort(entities);
 			return ListToStringUtil.arrayToString(entities,"__")+q.getTablesPath();
 		}
