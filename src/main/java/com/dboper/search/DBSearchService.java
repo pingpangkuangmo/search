@@ -112,6 +112,20 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 			long sqlSatrtTime=System.currentTimeMillis();
 			logger.warn("解析成sql花费了:"+(sqlSatrtTime-sqlParseStartTime)+" ms");
 			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql);
+			String unionTablesPath=q.getUnionTablesPath();
+			if(StringUtils.hasLength(unionTablesPath)){
+				try {
+					QueryBody unionQ=q.clone();
+					unionQ.setTablesPath(unionTablesPath);
+					unionQ.setParams(q.getUnionParams());
+					String unionSql=sqlService.getSql(unionQ);
+					if(StringUtils.hasLength(unionSql)){
+						data.addAll(config.getJdbcTemplate().queryForList(unionSql));
+					}
+				} catch (CloneNotSupportedException e) {
+					e.printStackTrace();
+				}
+			}
 			long sqlEndTime=System.currentTimeMillis();
 			logger.warn("sql查询花费了:"+(sqlEndTime-sqlSatrtTime)+" ms");
 			return process(data,q);
@@ -194,6 +208,7 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 		for(Map<String,Object> dataItem:data){
 			Map<String,Object> dataItemResult=processPerData(dataItem,ret,contexts,q);
 			if(dataItemResult!=null){
+				dataItem.putAll(q.getConstantData());
 				ret.add(dataItemResult);
 			}
 		}

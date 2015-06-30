@@ -10,7 +10,7 @@ import com.dboper.search.format.value.ValueFormatterRule;
 public class QueryBody implements Cloneable{
 
 	private List<String> columns=new ArrayList<String>();
-	private Map<String,Object> params=new HashMap<String,Object>();;
+	private Map<String,Object> params=new HashMap<String,Object>();
 	private String order_by="";
 	private Integer limit=Integer.MAX_VALUE;
 	private Integer start=0;
@@ -22,6 +22,12 @@ public class QueryBody implements Cloneable{
 	private List<String> entityColumns=new ArrayList<String>();
 	private List<String> deleteColumns=new ArrayList<String>();
 	private String groupBy;
+	
+	private Map<String,Object> constantData=new HashMap<String,Object>();
+	
+	private String unionTablesPath;
+	
+	private Map<String,Object> unionParams=new HashMap<String,Object>();
 	
 	//传输数据用，不用于查询配置
 	private boolean hasSon=false;
@@ -36,6 +42,30 @@ public class QueryBody implements Cloneable{
 		return (QueryBody)super.clone();
 	}
 	
+	public Map<String, Object> getUnionParams() {
+		return unionParams;
+	}
+
+	public void setUnionParams(Map<String, Object> unionParams) {
+		this.unionParams = unionParams;
+	}
+
+	public String getUnionTablesPath() {
+		return unionTablesPath;
+	}
+
+	public void setUnionTablesPath(String unionTablesPath) {
+		this.unionTablesPath = unionTablesPath;
+	}
+
+	public Map<String, Object> getConstantData() {
+		return constantData;
+	}
+
+	public void setConstantData(Map<String, Object> constantData) {
+		this.constantData = constantData;
+	}
+
 	public String getGroupBy() {
 		return groupBy;
 	}
