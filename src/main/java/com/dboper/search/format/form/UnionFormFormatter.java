@@ -123,6 +123,10 @@ public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 			}
 			fatherTotal.put(objName,obj);
 		}
+		Set<String> listNames=columnsFormatBody.getListNames();
+		for(String listName:listNames){
+			fatherTotal.put(listName,item.get(listName+formatter.getFormatterType()));
+		}
 	}
 
 	private Map<String,ColumnsFormatBody> collectColumnsInfo(List<FormFormatter> containsFormFormatters, List<String> columns) {
@@ -147,7 +151,9 @@ public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 							List<String> objColumns=currentFormatterContext.getObjColumns(ObjectAndColumn[0]);
 							objColumns.add(ObjectAndColumn[1]);
 						}else{
-							fatherColumns.add(tmp);
+							//fatherColumns.add(tmp);
+							ColumnsFormatBody currentFormatterContext=columnsInfo.get(formatterType);
+							currentFormatterContext.addListName(ObjectAndColumn[0]);
 						}
 						break;
 					}

@@ -34,6 +34,7 @@ public class ListFormFormatter implements FormFormatter{
 			}
 		}
 		Set<String> objNames=columnsFormatBody.getObjNames();
+		Set<String> listNames=columnsFormatBody.getListNames();
 		if(!fatherExits){
 			for(String objName:objNames){
 				Map<String,Object> obj=(Map<String, Object>)fatherTotal.get(objName);
@@ -42,6 +43,14 @@ public class ListFormFormatter implements FormFormatter{
 					objs.add(obj);
 				}
 				fatherTotal.put(objName,objs);
+			}
+			for(String listName:listNames){
+				Object obj=fatherTotal.get(listName);
+				List<Object> objs=new ArrayList<Object>();
+				if(obj!=null){
+					objs.add(obj);
+				}
+				fatherTotal.put(listName,objs);
 			}
 			return fatherTotal;
 		}else{
@@ -57,6 +66,22 @@ public class ListFormFormatter implements FormFormatter{
 				}
 				if(!exitsSonItem){
 					if(!MapUtil.mapValueEmpty(obj)){
+						objs.add(obj);
+					}
+				}
+			}
+			for(String listName:listNames){
+				List<Object> objs=(List<Object>)equalsFather.get(listName);
+				Object obj=fatherTotal.get(listName);
+				boolean exitsSonItem=false;
+				for(Object objItem:objs){
+					if(objItem.equals(obj)){
+						exitsSonItem=true;
+						break;
+					}
+				}
+				if(!exitsSonItem){
+					if(obj!=null){
 						objs.add(obj);
 					}
 				}
