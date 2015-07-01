@@ -351,11 +351,14 @@ public class TablesRelationPropertyService{
 			String secondTable=entityColumns.get(1);
 			List<String> firstRelations=tableConfigAndRelationtables.get(firstTable);
 			List<String> secondRelations=tableConfigAndRelationtables.get(secondTable);
+			if(firstRelations==null){
+				firstRelations=new ArrayList<String>();
+			}
+			if(secondRelations==null){
+				secondRelations=new ArrayList<String>();
+			}
 			firstRelations.add(firstTable);
 			secondRelations.add(secondTable);
-			if(firstRelations==null || secondRelations==null){
-				return "";
-			}
 			List<String> intersection=ListUtil.intersection(firstRelations,secondRelations);
 			if(intersection.size()>0){
 				return firstTable+" join "+secondTable;
