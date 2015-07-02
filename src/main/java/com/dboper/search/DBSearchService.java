@@ -120,6 +120,7 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 					unionQ.setParams(q.getUnionParams());
 					String unionSql=sqlService.getSql(unionQ);
 					if(StringUtils.hasLength(unionSql)){
+						logger.warn("使用了联合查询");
 						data.addAll(config.getJdbcTemplate().queryForList(unionSql));
 					}
 				} catch (CloneNotSupportedException e) {
