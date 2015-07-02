@@ -30,9 +30,7 @@ public class TimeSqlParamsParser implements SqlParamsHandler{
 			try {
 				Date date=format.parse((String)value);
 				value=date.getTime()/1000;
-			} catch (ParseException e) {
-				e.printStackTrace();
-			}
+			} catch (ParseException e) {}
 		}
 		sb.append(" ").append(realOper).append(" ").append(value);
 		return sb.toString();
