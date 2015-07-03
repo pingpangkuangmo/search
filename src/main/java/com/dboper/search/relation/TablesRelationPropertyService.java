@@ -229,7 +229,9 @@ public class TablesRelationPropertyService{
 	//需要优化下，对于只有一个entity时的查询（relation很简单，就是entity表名，然后就是处理附属表）
 	private String parseJoinStrRelation(QueryBody q,TableColumnsModule tableColumnsModule) {
 		List<String> entityColumns=q.getEntityColumns();
-		if(entityColumns!=null && entityColumns.size()==1){
+		String joinStr=q.getTablesPath();
+		boolean hasLength=StringUtils.hasLength(joinStr);
+		if(entityColumns!=null && entityColumns.size()==1 && !hasLength){
 			tableColumnsModule.processQueryBodyTableCoumns(q,null);
 			StringBuilder sb=new StringBuilder();
 			String entity=entityColumns.get(0);
@@ -238,8 +240,8 @@ public class TablesRelationPropertyService{
 			addSonTables(entity,entity,sb,new ArrayList<String>(),null);
 			return sb.toString();
 		}
-		String joinStr=q.getTablesPath();
-		if(!StringUtils.hasLength(joinStr)){
+		
+		if(!hasLength){
 			//用户没有指定tablesPath，需要自动根据entity列表和已经配置的relation来进行自动判断，如果没有找到，不处理，此时连接形式默认都处理成  inner join
 			String computerTablesPath=computer(q,tableColumnsModule);
 			if(!StringUtils.hasLength(computerTablesPath)){
