@@ -161,6 +161,10 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 	}
 	
 	public List<Map<String,Object>> select(String action,Map<String,Object> params){
+		return select(action, params, params);
+	}
+	
+	public List<Map<String,Object>> select(String action,Map<String,Object> params,Map<String,Object> unionParams){
 		QueryBody q=querys.get(action);
 		if(q==null){
 			return new ArrayList<Map<String,Object>>();
@@ -174,12 +178,19 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 		}
 		if(params!=null){
 			Map<String,Object> oldParams=copy.getParams();
+			Map<String,Object> oldUnionParams=copy.getUnionParams();
 			Map<String,Object> newParams=new HashMap<String,Object>();
-			for(String key:oldParams.keySet()){
-				newParams.put(key,oldParams.get(key));
+			Map<String,Object> newUnionParams=new HashMap<String,Object>();
+			if(oldParams!=null){
+				newParams.putAll(oldParams);
+			}
+			if(oldUnionParams!=null){
+				newUnionParams.putAll(oldUnionParams);
 			}
 			newParams.putAll(params);
+			newUnionParams.putAll(unionParams);
 			copy.setParams(newParams);
+			copy.setUnionParams(newUnionParams);
 		}
 		return select(copy);
 	}
