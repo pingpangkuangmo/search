@@ -29,6 +29,7 @@ import com.dboper.search.observer.ObserverModuleUtil;
 import com.dboper.search.observer.ProcessQueryFileChange;
 import com.dboper.search.observer.QueryFileListener;
 import com.dboper.search.util.FileUtil;
+import com.dboper.search.util.GroupColumnsUtils;
 
 @Service
 public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
@@ -217,14 +218,40 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 	private List<Map<String, Object>> processData(List<Map<String, Object>> data, QueryBody q) {
 		Map<String,HashMap<String,Object>> contexts=prepareContexts(q);
 		List<Map<String,Object>> ret=new ArrayList<Map<String,Object>>();
+		List<String> exitsDataInfo=new ArrayList<String>();
+		List<String> groupColumns=q.getGroupColumns();
+		boolean haveGroupColumns=true;
+		if(groupColumns==null || groupColumns.size()<1){
+			haveGroupColumns=false;
+		}
 		for(Map<String,Object> dataItem:data){
 			Map<String,Object> dataItemResult=processPerData(dataItem,ret,contexts,q);
 			if(dataItemResult!=null){
 				dataItem.putAll(q.getConstantData());
-				ret.add(dataItemResult);
+				if(haveGroupColumns){
+					String currentDataInfo=getCurrentDataInfo(dataItem,groupColumns);
+					if(!exitsDataInfo.contains(currentDataInfo)){
+						exitsDataInfo.add(currentDataInfo);
+						ret.add(dataItemResult);
+					}
+				}else{
+					ret.add(dataItemResult);
+				}
 			}
 		}
 		return ret;
+	}
+	
+	private String getCurrentDataInfo(Map<String,Object> currentData,List<String> groupColumns){
+		StringBuilder sb=new StringBuilder("");
+		for(String groupColumn:groupColumns){
+			String key=GroupColumnsUtils.getKey(groupColumn);
+			if(key==null){
+				throw new RuntimeException("groupColumn "+groupColumn+" is not valid");
+			}
+			sb.append(currentData.get(key));
+		}
+		return sb.toString();
 	}
 
 

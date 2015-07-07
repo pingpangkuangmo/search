@@ -45,7 +45,10 @@ public class MapUtil {
 	
 	public static boolean compareTwoMapEquals(Map<String, Object> fatherTotal,Map<String, Object> alreadyFather, List<String> groupColumns) {
 		for(String key:groupColumns){
-			String tmp=key.substring(key.indexOf(".")+1);
+			String tmp=GroupColumnsUtils.getKey(key);
+			if(tmp==null){
+				throw new RuntimeException("groupColumn "+key+" is not valid");
+			}
 			Object value1=fatherTotal.get(tmp);
 			Object value2=alreadyFather.get(tmp);
 			if(value1==null){

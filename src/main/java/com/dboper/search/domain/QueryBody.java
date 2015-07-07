@@ -41,7 +41,7 @@ public class QueryBody implements Cloneable{
 	public QueryBody clone() throws CloneNotSupportedException {
 		return (QueryBody)super.clone();
 	}
-	
+
 	public Map<String, Object> getUnionParams() {
 		return unionParams;
 	}
