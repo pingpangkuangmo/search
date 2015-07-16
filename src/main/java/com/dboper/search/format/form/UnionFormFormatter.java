@@ -8,6 +8,7 @@ import java.util.Set;
 
 import com.dboper.search.domain.QueryBody;
 import com.dboper.search.format.ProcessUnit;
+import com.dboper.search.util.MapUtil;
 
 public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 	
@@ -121,7 +122,11 @@ public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 			for(String objColumn:objColumns){
 				obj.put(objColumn,item.get(objName+formatter.getFormatterType()+objColumn));
 			}
-			fatherTotal.put(objName,obj);
+			if(!MapUtil.mapValueEmpty(obj)){
+				fatherTotal.put(objName,obj);
+			}else{
+				fatherTotal.put(objName,null);
+			}
 		}
 		Set<String> listNames=columnsFormatBody.getListNames();
 		for(String listName:listNames){
