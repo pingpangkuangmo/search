@@ -65,23 +65,30 @@ public class MapUtil {
 	}
 
 	public static boolean compareMapEquals(Map<String,Object> map1,Map<String,Object> map2){
-		if(map1==null || map1.size()<1){
+		boolean map1Empty=mapValueEmpty(map1);
+		boolean map2Empty=mapValueEmpty(map2);
+		if(map1Empty && !map2Empty){
 			return false;
 		}
-		for(String key:map1.keySet()){
-			Object value1=map1.get(key);
-			Object value2=map2.get(key);
-			if(value1==null){
-				if(value2!=null){
-					return false;
-				}
-			}else{
-				if(!value1.equals(value2)){
-					return false;
+		if(!map1Empty && map2Empty){
+			return false;
+		}
+		if(!map1Empty && !map2Empty){
+			for(String key:map1.keySet()){
+				Object value1=map1.get(key);
+				Object value2=map2.get(key);
+				if(value1==null){
+					if(value2!=null){
+						return false;
+					}
+				}else{
+					if(!value1.equals(value2)){
+						return false;
+					}
 				}
 			}
 		}
 		return true;
 	}
-	
+
 }
