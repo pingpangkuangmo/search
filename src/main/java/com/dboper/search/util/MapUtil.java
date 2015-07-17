@@ -84,4 +84,42 @@ public class MapUtil {
 		return true;
 	}
 	
+	public static void addMapsonToList(Map<String,Object> fatherTotal,String[] prefixs,Map<String,Object> obj){
+		Map<String,Object> tmpObj=fatherTotal;
+		//List<Map<String,Object>> 
+		int len=prefixs.length;
+		for(int i=0;i<len-1;i++){
+			Object prefixObj=tmpObj.get(prefixs[i]);
+			if(prefixObj!=null && prefixObj instanceof Map){
+				tmpObj=((Map<String,Object>)prefixObj);
+			}else{
+				//不应该出现此种情况
+				tmpObj=null;
+				break;
+			}
+		}
+		if(tmpObj!=null){
+			tmpObj.put(prefixs[len-1],obj);
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static void addMapsonToMap(Map<String,Object> fatherTotal,String[] prefixs,Map<String,Object> obj){
+		int len=prefixs.length;
+		Map<String,Object> tmpObj=fatherTotal;
+		for(int i=0;i<len-1;i++){
+			Object prefixObj=tmpObj.get(prefixs[i]);
+			if(prefixObj!=null && prefixObj instanceof Map){
+				tmpObj=((Map<String,Object>)prefixObj);
+			}else{
+				//不应该出现此种情况
+				tmpObj=null;
+				break;
+			}
+		}
+		if(tmpObj!=null){
+			tmpObj.put(prefixs[len-1],obj);
+		}
+	}
+	
 }

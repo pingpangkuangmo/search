@@ -1,6 +1,7 @@
 package com.dboper.search.format.form;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,8 +21,8 @@ public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 	
 	public UnionFormFormatter(){
 		formatters=new ArrayList<FormFormatter>();
-		formatters.add(new ListFormFormatter());
 		formatters.add(new MapFormFormatter());
+		formatters.add(new ListFormFormatter());
 	}
 	
 	@Override
@@ -35,6 +36,11 @@ public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 		List<FormFormatter> containsFormFormatters=getContainsFormFormatters(columns);
 		if(containsFormFormatters.size()>0){
 			Map<String,ColumnsFormatBody> columnsInfo=collectColumnsInfo(containsFormFormatters,columns);
+			for(String key:columnsInfo.keySet()){
+				ColumnsFormatBody columnsFormatBody=columnsInfo.get(key);
+				Collections.sort(columnsFormatBody.getListNames());
+				Collections.sort(columnsFormatBody.getObjNames());
+			}
 			FormFormatterContext context=new FormFormatterContext();
 			context.setColumnsInfo(columnsInfo);
 			context.setContainsFormFormatters(containsFormFormatters);
@@ -113,9 +119,10 @@ public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 		}
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void initObj(Map<String, Object> item,Map<String, Object> fatherTotal, ColumnsFormatBody columnsFormatBody,
 			FormFormatter formatter) {
-		Set<String> objNames=columnsFormatBody.getObjNames();
+		List<String> objNames=columnsFormatBody.getObjNames();
 		for(String objName:objNames){
 			Map<String,Object> obj=new HashMap<String,Object>();
 			List<String> objColumns=columnsFormatBody.getObjColumns(objName);
@@ -123,12 +130,19 @@ public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 				obj.put(objColumn,item.get(objName+formatter.getFormatterType()+objColumn));
 			}
 			if(!MapUtil.mapValueEmpty(obj)){
-				fatherTotal.put(objName,obj);
+				String[] parts=objName.split("\\.");
+				int len=parts.length;
+				if(len==1){
+					fatherTotal.put(objName,obj);
+				}else if(len>1 && formatter instanceof MapFormFormatter){
+					MapUtil.addMapsonToMap(fatherTotal, parts, obj);
+				}
+				
 			}else{
 				fatherTotal.put(objName,null);
 			}
 		}
-		Set<String> listNames=columnsFormatBody.getListNames();
+		List<String> listNames=columnsFormatBody.getListNames();
 		for(String listName:listNames){
 			fatherTotal.put(listName,item.get(listName+formatter.getFormatterType()));
 		}
@@ -152,7 +166,7 @@ public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 						String[] ObjectAndColumn=tmp.split(formatterType);
 						if(ObjectAndColumn.length>1){
 							ColumnsFormatBody currentFormatterContext=columnsInfo.get(formatterType);
-							currentFormatterContext.getObjNames().add(ObjectAndColumn[0]);
+							currentFormatterContext.addObjName(ObjectAndColumn[0]);
 							List<String> objColumns=currentFormatterContext.getObjColumns(ObjectAndColumn[0]);
 							objColumns.add(ObjectAndColumn[1]);
 						}else{
