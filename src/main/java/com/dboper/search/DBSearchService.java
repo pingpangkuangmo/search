@@ -107,6 +107,13 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 	}
 
 	public List<Map<String,Object>> select(QueryBody q){
+		List<String> groupColumns=q.getGroupColumns();
+		List<String> originGroupColumns=new ArrayList<String>();
+		if(groupColumns!=null){
+			for(String item:groupColumns){
+				originGroupColumns.add(item);
+			}
+		}
 		long sqlParseStartTime=System.currentTimeMillis();
 		String sql=sqlService.getSql(q);
 		if(StringUtils.hasLength(sql)){
@@ -115,17 +122,20 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql);
 			String unionTablesPath=q.getUnionTablesPath();
 			if(StringUtils.hasLength(unionTablesPath)){
-				try {
-					QueryBody unionQ=q.clone();
-					unionQ.setTablesPath(unionTablesPath);
-					unionQ.setParams(q.getUnionParams());
-					String unionSql=sqlService.getSql(unionQ);
-					if(StringUtils.hasLength(unionSql)){
-						logger.warn("使用了联合查询");
-						data.addAll(config.getJdbcTemplate().queryForList(unionSql));
-					}
-				} catch (CloneNotSupportedException e) {
-					e.printStackTrace();
+				QueryBody unionQ=new QueryBody();
+				List<String> entityColumns=q.getEntityColumns();
+				if(entityColumns!=null && entityColumns.size()>0){
+					unionQ.setEntityColumns(q.getEntityColumns());
+				}else{
+					unionQ.setColumns(q.getColumns());
+				}
+				unionQ.setGroupColumns(originGroupColumns);
+				unionQ.setTablesPath(unionTablesPath);
+				unionQ.setParams(q.getUnionParams());
+				String unionSql=sqlService.getSql(unionQ);
+				if(StringUtils.hasLength(unionSql)){
+					logger.warn("使用了联合查询");
+					data.addAll(config.getJdbcTemplate().queryForList(unionSql));
 				}
 			}
 			long sqlEndTime=System.currentTimeMillis();

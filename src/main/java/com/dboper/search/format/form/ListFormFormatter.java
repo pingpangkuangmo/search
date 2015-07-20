@@ -1,6 +1,7 @@
 package com.dboper.search.format.form;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,7 +16,7 @@ public class ListFormFormatter implements FormFormatter{
 		return "@list";
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public Map<String, Object> fromat(Map<String, Object> item,Map<String,Object> fatherTotal,
 			List<Map<String, Object>> data, ColumnsFormatBody columnsFormatBody, QueryBody q) {
@@ -33,16 +34,22 @@ public class ListFormFormatter implements FormFormatter{
 				break;
 			}
 		}
-		Set<String> objNames=columnsFormatBody.getObjNames();
-		Set<String> listNames=columnsFormatBody.getListNames();
+		List<String> objNames=columnsFormatBody.getObjNames();
+		List<String> listNames=columnsFormatBody.getListNames();
 		if(!fatherExits){
 			for(String objName:objNames){
 				Map<String,Object> obj=(Map<String, Object>)fatherTotal.get(objName);
-				List<Map<String,Object>> objs=new ArrayList<Map<String,Object>>();
-				if(!MapUtil.mapValueEmpty(obj)){
-					objs.add(obj);
+				String[] parts=objName.split("\\.");
+				if(parts.length==1){
+					List<Map<String,Object>> objs=new ArrayList<Map<String,Object>>();
+					if(!MapUtil.mapValueEmpty(obj)){
+						objs.add(obj);
+					}
+					fatherTotal.put(objName,objs);
+				}else if(parts.length>1){
+					MapUtil.addMapsonToList(fatherTotal,parts,obj);
 				}
-				fatherTotal.put(objName,objs);
+				
 			}
 			for(String listName:listNames){
 				Object obj=fatherTotal.get(listName);
@@ -55,7 +62,18 @@ public class ListFormFormatter implements FormFormatter{
 			return fatherTotal;
 		}else{
 			for(String objName:objNames){
-				List<Map<String,Object>> objs=(List<Map<String,Object>>)equalsFather.get(objName);
+				List<Map<String,Object>> objs=null;
+				Object oldObjs=equalsFather.get(objName);
+				if(oldObjs==null){
+					objs=new ArrayList<Map<String,Object>>();
+					equalsFather.put(objName,objs);
+				}else if(oldObjs instanceof Map){
+					objs=new ArrayList<Map<String,Object>>();
+					objs.add((Map<String, Object>) oldObjs);
+					equalsFather.put(objName,objs);
+				}else if(oldObjs instanceof List){
+					objs=(List<Map<String, Object>>) oldObjs;
+				}
 				Map<String,Object> obj=(Map<String, Object>)fatherTotal.get(objName);
 				boolean exitsSonItem=false;
 				for(Map<String,Object> objItem:objs){

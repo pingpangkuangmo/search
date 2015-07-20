@@ -9,25 +9,35 @@ import java.util.Set;
 
 public class ColumnsFormatBody {
 
-	private Set<String> objNames=new HashSet<String>();
+	private List<String> objNames=new ArrayList<String>();
 	private Map<String,List<String>> totalObjColumns=new HashMap<String,List<String>>();
 	
-	private Set<String> listNames=new HashSet<String>();
+	private List<String> listNames=new ArrayList<String>();
 	
 	public void addListName(String listName){
-		listNames.add(listName);
+		if(!listNames.contains(listName)){
+			listNames.add(listName);
+		}
+	}
+	
+	public void addObjName(String objName){
+		if(!objNames.contains(objName)){
+			objNames.add(objName);
+		}
 	}
 	
 	public void addObj(String objName,List<String> objColumn){
-		objNames.add(objName);
-		totalObjColumns.put(objName,objColumn);
+		if(!objNames.contains(objName)){
+			objNames.add(objName);
+			totalObjColumns.put(objName,objColumn);
+		}
 	}
 	
-	public Set<String> getListNames() {
+	public List<String> getListNames() {
 		return listNames;
 	}
 
-	public void setListNames(Set<String> listNames) {
+	public void setListNames(List<String> listNames) {
 		this.listNames = listNames;
 	}
 
@@ -40,11 +50,11 @@ public class ColumnsFormatBody {
 		return columns;
 	}
 
-	public Set<String> getObjNames() {
+	public List<String> getObjNames() {
 		return objNames;
 	}
 
-	public void setObjNames(Set<String> objNames) {
+	public void setObjNames(List<String> objNames) {
 		this.objNames = objNames;
 	}
 
