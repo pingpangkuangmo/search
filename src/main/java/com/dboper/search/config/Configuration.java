@@ -27,6 +27,8 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	
 	private String queryFileDirectory="query";
 	
+	private String complexQueryFileDirectory="complexQuery";
+	
 	private String relationDir="relation";
 	
 	private String baseRelationFilesDir="baseRelation";
@@ -43,6 +45,14 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	
 	private boolean monitorBaseRelationFiles=false;
 	
+	public String getComplexQueryFileDirectory() {
+		return complexQueryFileDirectory;
+	}
+
+	public void setComplexQueryFileDirectory(String complexQueryFileDirectory) {
+		this.complexQueryFileDirectory = complexQueryFileDirectory;
+	}
+
 	public String getSonTables() {
 		return sonTables;
 	}
