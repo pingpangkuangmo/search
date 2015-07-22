@@ -29,6 +29,8 @@ public class QueryBody implements Cloneable{
 	
 	private Map<String,Object> unionParams=new HashMap<String,Object>();
 	
+	private Map<String,String> baseLists=new HashMap<String,String>();
+	
 	//传输数据用，不用于查询配置
 	private boolean hasSon=false;
 	private String fatherEntity;
@@ -40,6 +42,14 @@ public class QueryBody implements Cloneable{
 	@Override
 	public QueryBody clone() throws CloneNotSupportedException {
 		return (QueryBody)super.clone();
+	}
+
+	public Map<String, String> getBaseLists() {
+		return baseLists;
+	}
+
+	public void setBaseLists(Map<String, String> baseLists) {
+		this.baseLists = baseLists;
 	}
 
 	public Map<String, Object> getUnionParams() {

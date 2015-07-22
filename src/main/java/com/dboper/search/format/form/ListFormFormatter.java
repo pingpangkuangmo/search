@@ -1,10 +1,8 @@
 package com.dboper.search.format.form;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.dboper.search.domain.QueryBody;
 import com.dboper.search.util.MapUtil;
@@ -16,7 +14,7 @@ public class ListFormFormatter implements FormFormatter{
 		return "@list";
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@SuppressWarnings({ "unchecked"})
 	@Override
 	public Map<String, Object> fromat(Map<String, Object> item,Map<String,Object> fatherTotal,
 			List<Map<String, Object>> data, ColumnsFormatBody columnsFormatBody, QueryBody q) {
@@ -47,7 +45,7 @@ public class ListFormFormatter implements FormFormatter{
 					}
 					fatherTotal.put(objName,objs);
 				}else if(parts.length>1){
-					MapUtil.addMapsonToList(fatherTotal,parts,obj);
+					MapUtil.addMapsonToList(fatherTotal,objName,parts,obj,q.getBaseLists());
 				}
 				
 			}

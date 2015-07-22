@@ -5,7 +5,14 @@ public class SecondQueryBody {
 	private String keyField;
 	private String secondAction;
 	private String paramsKey;
+	private boolean complex;
 	
+	public boolean isComplex() {
+		return complex;
+	}
+	public void setComplex(boolean complex) {
+		this.complex = complex;
+	}
 	public String getKeyField() {
 		return keyField;
 	}
