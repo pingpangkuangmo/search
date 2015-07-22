@@ -57,7 +57,7 @@ public class FileUtil {
 			for(String key:actionQueryBody.keySet()){
 				ret.put(key,actionQueryBody.get(key));
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return ret;

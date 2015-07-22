@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.dboper.search.domain.QueryBody;
 import com.dboper.search.format.ProcessUnit;
@@ -63,16 +62,34 @@ public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 			fatherTotal.put(column,ret.get(column));
 		}
 		//处理其他formatter，交给具体的formatter来处理，然后设置进父元素中
+		//先执行MapFormFormatter，后执行ListFormFormatter
+		
+		FormFormatter mapFormFormatter=null;
 		for(FormFormatter formatter:containsFormFormatters){
-			ColumnsFormatBody columnsFormatBody=columnsInfo.get(formatter.getFormatterType());
-			initObj(ret,fatherTotal,columnsFormatBody,formatter);
-			fatherTotal=formatter.fromat(ret,fatherTotal,allRets,columnsFormatBody,q);
-			//fatherTotal==null 表示会聚合到已有的fatherTotal中，不需要再新添加
-			if(fatherTotal==null){
+			if(formatter instanceof MapFormFormatter){
+				mapFormFormatter=formatter;
+			}
+		}
+		if(mapFormFormatter!=null){
+			processFormat(columnsInfo, mapFormFormatter, ret, fatherTotal, allRets, q);
+		}
+		for(FormFormatter formatter:containsFormFormatters){
+			if(formatter==mapFormFormatter){
+				continue;
+			}
+			if(processFormat(columnsInfo, formatter, ret, fatherTotal, allRets, q)==null){
 				break;
 			}
 		}
 		return fatherTotal;
+	}
+	
+	//fatherTotal==null 表示会聚合到已有的fatherTotal中，不需要再新添加
+	private Map<String,Object> processFormat(Map<String, ColumnsFormatBody> columnsInfo,FormFormatter formatter,
+			Map<String,Object> ret,Map<String,Object> fatherTotal,List<Map<String,Object>> allRets,QueryBody q){
+		ColumnsFormatBody columnsFormatBody=columnsInfo.get(formatter.getFormatterType());
+		initObj(ret,fatherTotal,columnsFormatBody,formatter);
+		return formatter.fromat(ret,fatherTotal,allRets,columnsFormatBody,q);
 	}
 
 	
@@ -119,7 +136,6 @@ public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 		}
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void initObj(Map<String, Object> item,Map<String, Object> fatherTotal, ColumnsFormatBody columnsFormatBody,
 			FormFormatter formatter) {
 		List<String> objNames=columnsFormatBody.getObjNames();
@@ -134,10 +150,13 @@ public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 				int len=parts.length;
 				if(len==1){
 					fatherTotal.put(objName,obj);
-				}else if(len>1 && formatter instanceof MapFormFormatter){
+ 				}else if(len>1 && formatter instanceof MapFormFormatter){
+ 					//只支持向map对象中套map对象，即"app","product@mapproduct","product.productLine@mapproduct_line"
+ 					//不支持向map对象中套list对象，即"access_group","slb@mapslb","slb.vips@listslb_vips"
 					MapUtil.addMapsonToMap(fatherTotal, parts, obj);
+				}else if(len>1 && formatter instanceof ListFormFormatter){
+					fatherTotal.put(objName,obj);
 				}
-				
 			}else{
 				fatherTotal.put(objName,null);
 			}

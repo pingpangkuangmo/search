@@ -1,5 +1,6 @@
 package com.dboper.search.util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,23 +85,33 @@ public class MapUtil {
 		return true;
 	}
 	
-	public static void addMapsonToList(Map<String,Object> fatherTotal,String[] prefixs,Map<String,Object> obj){
+	@SuppressWarnings("unchecked")
+	public static void addMapsonToList(Map<String,Object> fatherTotal,String objName,String[] prefixs,
+			Map<String,Object> obj,Map<String,String> baseLists){
 		Map<String,Object> tmpObj=fatherTotal;
-		//List<Map<String,Object>> 
+		boolean baseListObj=false;
+		if(baseLists.containsKey(objName)){
+			baseListObj=true;
+		}
 		int len=prefixs.length;
-		for(int i=0;i<len-1;i++){
-			Object prefixObj=tmpObj.get(prefixs[i]);
+		if(len==2){
+			Object prefixObj=tmpObj.get(prefixs[0]);
 			if(prefixObj!=null && prefixObj instanceof Map){
-				tmpObj=((Map<String,Object>)prefixObj);
-			}else{
-				//不应该出现此种情况
-				tmpObj=null;
-				break;
+				Map<String,Object> firstMap=((Map<String,Object>)prefixObj);
+				ArrayList<Object> secondObj=(ArrayList<Object>) firstMap.get(prefixs[1]);
+				if(secondObj==null){
+					secondObj=new ArrayList<Object>();
+					firstMap.put(prefixs[1],secondObj);
+				}
+				if(baseListObj && obj!=null){
+					Object base=obj.get(baseLists.get(objName));
+					if(base!=null && !secondObj.contains(obj)){
+						secondObj.add(base);
+					}
+				}
 			}
 		}
-		if(tmpObj!=null){
-			tmpObj.put(prefixs[len-1],obj);
-		}
+		fatherTotal.remove(objName);
 	}
 	
 	@SuppressWarnings("unchecked")
