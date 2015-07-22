@@ -17,22 +17,28 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import com.alibaba.fastjson.TypeReference;
 import com.dboper.search.config.Configuration;
+import com.dboper.search.domain.ComplexQueryBody;
 import com.dboper.search.domain.PageResult;
 import com.dboper.search.domain.QueryBody;
+import com.dboper.search.domain.SecondQueryBody;
 import com.dboper.search.format.ProcessUnit;
 import com.dboper.search.format.form.UnionFormFormatter;
 import com.dboper.search.format.value.UnionValueFormatter;
+import com.dboper.search.observer.ComplexQueryFileListener;
 import com.dboper.search.observer.ObserverItem;
 import com.dboper.search.observer.ObserverModule;
 import com.dboper.search.observer.ObserverModuleUtil;
+import com.dboper.search.observer.ProcessComplexQueryFileChange;
 import com.dboper.search.observer.ProcessQueryFileChange;
 import com.dboper.search.observer.QueryFileListener;
 import com.dboper.search.util.FileUtil;
 import com.dboper.search.util.GroupColumnsUtils;
+import com.dboper.search.util.MapUtil;
 
 @Service
-public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
+public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQueryFileChange,Bootstrap{
 	
 	private final Log logger = LogFactory.getLog(DBSearchService.class);
 
@@ -43,20 +49,12 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 	
 	private ConcurrentHashMap <String,QueryBody> querys=new ConcurrentHashMap<String,QueryBody>();
 	
-	/**
-	 * 用于保存某些文件的配置，当某个文件发生变化时，需要将其他没变化的文件的数据和变化文件的数据合并到querys
-	 */
-	private ConcurrentHashMap<String,Map<String,QueryBody>> query_tmp=new ConcurrentHashMap<String,Map<String,QueryBody>>();
+	private ConcurrentHashMap <String,ComplexQueryBody> complexQuerys=new ConcurrentHashMap<String,ComplexQueryBody>();
 	
 	/**
 	 * 用于存储那些处理单元，如处理返回值得格式化，处理展示形式的格式化
 	 */
 	private List<ProcessUnit<? extends HashMap<String,Object>>> processUnits;
-	
-	/**
-	 * 用于添加到监控的对象，有了该对象就可以通过ObserverModuleUtil来打开或者关闭监控
-	 */
-	private ObserverItem observerItem;
 	
 	@Override
 	public void init() {
@@ -146,6 +144,62 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
+	public List<Map<String,Object>> selectComplex(ComplexQueryBody complexQueryBody){
+		if(complexQueryBody==null){
+			return new ArrayList<Map<String,Object>>();
+		}
+		List<Map<String,Object>> firstDatas=select(complexQueryBody.getFirstAction(),complexQueryBody.getParams());
+		
+		Map<String,SecondQueryBody> secondQuery=complexQueryBody.getSecondQuery();
+		
+		Map<String,List<Object>> propertyEntityPks=new HashMap<String,List<Object>>();
+		Map<String,Map<Object,Map<String,Object>>> propertyEntityPksEntity=new HashMap<String,Map<Object,Map<String,Object>>>();
+		
+		for(Map<String,Object> firstData:firstDatas){
+			for(String property:secondQuery.keySet()){
+				SecondQueryBody secondQueryItem=secondQuery.get(property);
+				List<Map<String,Object>> propertyLists=(List<Map<String,Object>>)firstData.get(property);
+				if(propertyLists!=null && propertyLists.size()>0){
+					for(Map<String,Object> propertEntity:propertyLists){
+						List<Object> entityPks=propertyEntityPks.get(property);
+						if(entityPks==null){
+							entityPks=new ArrayList<Object>();
+							propertyEntityPks.put(property, entityPks);
+						}
+						Map<Object,Map<String,Object>> entityPksEntity=propertyEntityPksEntity.get(property);
+						if(entityPksEntity==null){
+							entityPksEntity=new HashMap<Object,Map<String,Object>>();
+							propertyEntityPksEntity.put(property,entityPksEntity);
+						}
+						Object entityPk=propertEntity.get(secondQueryItem.getKeyField());
+						entityPks.add(entityPk);
+						entityPksEntity.put(entityPk,propertEntity);
+					}
+				}
+			}
+		}
+		
+		for(String property:secondQuery.keySet()){
+			List<Object> entityPks=propertyEntityPks.get(property);
+			if(entityPks!=null && entityPks.size()>0){
+				Map<Object,Map<String,Object>> propertyLists=propertyEntityPksEntity.get(property);
+				SecondQueryBody secondQueryItem=secondQuery.get(property);
+				List<Map<String,Object>> secondDatas=select(secondQueryItem.getSecondAction(),
+						MapUtil.getMap(secondQueryItem.getParamsKey()+"@in",entityPks));
+				for(Map<String,Object> secondData:secondDatas){
+					Object entityPk=secondData.get(secondQueryItem.getKeyField());
+					Map<String,Object> oldSecondData=propertyLists.get(entityPk);
+					if(oldSecondData!=null){
+						oldSecondData.clear();
+						oldSecondData.putAll(secondData);
+					}
+				}
+			}
+		}
+		return firstDatas;
+	}
+	
 	public List<Map<String,Object>> selectSql(String sql){
 		if(StringUtils.hasLength(sql)){
 			return config.getJdbcTemplate().queryForList(sql);
@@ -169,6 +223,10 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 	
 	public Map<String,Object> selectOne(QueryBody q){
 		return getOne(select(q));
+	}
+	
+	public Map<String,Object> selectComplexOne(ComplexQueryBody complexQueryBody){
+		return getOne(selectComplex(complexQueryBody));
 	}
 	
 	public List<Map<String,Object>> select(String action,Map<String,Object> params){
@@ -209,14 +267,39 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 	public Map<String,Object> selectOne(String action,Map<String,Object> params){
 		return getOne(select(action, params));
 	}
+	
+	public Map<String,Object> selectComplexOne(String action,Map<String,Object> params){
+		return getOne(selectComplex(action, params));
+	}
 
 	public List<Map<String,Object>> select(String action){
 		return select(action,null);
 	}
 	
+	public List<Map<String,Object>> selectComplex(String action){
+		return selectComplex(action,null);
+	}
+	
 	public Map<String,Object> selectOne(String action){
 		return getOne(select(action));
 	}
+	
+	public Map<String,Object> selectComplexOne(String action){
+		return getOne(selectComplex(action));
+	}
+	
+	public List<Map<String,Object>> selectComplex(String action,Map<String,Object> params){
+		ComplexQueryBody complexQueryBody=complexQuerys.get(action);
+		if(complexQueryBody==null){
+			return new ArrayList<Map<String,Object>>();
+		}
+		if(params!=null){
+			complexQueryBody.getParams().putAll(params);
+		}
+		return selectComplex(complexQueryBody);
+	}
+	
+	
 	
 	private Map<String,Object> getOne(List<Map<String,Object>> data){
 		if(data!=null && data.size()>0){
@@ -291,11 +374,16 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 	public void processQueryBodyChange(Map<String, QueryBody> change,String fileName) {
 		logger.info("observ "+fileName+" changed");
 		if(change!=null){
-			query_tmp.put(fileName,change);
-			querys.clear();
-			for(String key:query_tmp.keySet()){
-				querys.putAll(query_tmp.get(key));
-			}
+			querys.putAll(change);
+		}
+	}
+	
+	@Override
+	public void processComplexQueryBodyChange(
+			Map<String, ComplexQueryBody> change, String fileName) {
+		logger.info("observ "+fileName+" changed");
+		if(change!=null){
+			complexQuerys.putAll(change);
 		}
 	}
 	
@@ -306,8 +394,15 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 			if(resources!=null){
 				for(Resource resource:resources){
 					Map<String,QueryBody> fileQueryBody=FileUtil.getQueryBodyFromFile(resource.getInputStream());
-					query_tmp.put(resource.getFile().getName(),fileQueryBody);
 					querys.putAll(fileQueryBody);
+				}
+			}
+			Resource[] complexResources = resolver.getResources("classpath*:"+config.getComplexQueryFileDirectory()+"/*.json");  
+			if(complexResources!=null){
+				for(Resource resource:complexResources){
+					Map<String,ComplexQueryBody> fileQueryBody=FileUtil.getTFromInputStream(resource.getInputStream(),
+							new TypeReference<Map<String,ComplexQueryBody>>(){});
+					complexQuerys.putAll(fileQueryBody);
 				}
 			}
 		} catch (IOException e) {
@@ -325,9 +420,25 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 		ObserverModule observerModule=new ObserverModule();
 		ObserverModuleUtil.setObserverModule(observerModule);
 		if(config.isMonitorQueryFile()){
-			observerItem=getQueryFileObserverItem();
+			ObserverItem observerItem=getQueryFileObserverItem();
 			observerModule.addObserverItem(observerItem);
+			
+			ObserverItem complexObserverItem=getComplexQueryFileObserverItem();
+			observerModule.addObserverItem(complexObserverItem);
+			
 		}
+	}
+	
+	private ObserverItem getComplexQueryFileObserverItem() {
+		ObserverItem observerItem=new ObserverItem();
+		observerItem.setDir(config.getComplexQueryFileDirectory());
+		observerItem.setInterval(5000L);
+		observerItem.setName("complexQuery");
+		observerItem.setSuffix("json");
+		List<FileAlterationListener> listeners=new ArrayList<FileAlterationListener>();
+		listeners.add(new ComplexQueryFileListener(this));
+		observerItem.setListeners(listeners);
+		return observerItem;
 	}
 	
 	private ObserverItem getQueryFileObserverItem() {
@@ -349,7 +460,5 @@ public class DBSearchService implements ProcessQueryFileChange,Bootstrap{
 	public void setConfig(Configuration config) {
 		this.config = config;
 	}
-	
-	
 
 }

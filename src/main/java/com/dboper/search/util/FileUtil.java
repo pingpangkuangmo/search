@@ -43,13 +43,17 @@ public class FileUtil {
 	}
 	
 	public static Map<String,QueryBody> getQueryBodyFromFile(InputStream in){
-		Map<String,QueryBody> ret=new HashMap<String,QueryBody>();
+		return getTFromInputStream(in,new TypeReference<Map<String,QueryBody>>(){});
+	}
+	
+	public static <T> Map<String,T> getTFromInputStream(InputStream in,TypeReference<Map<String,T>> typeReference){
+		Map<String,T> ret=new HashMap<String,T>();
 		if(in==null){
 			return ret;
 		}
 		try {
 			String fileContent=getInputStreamContent(in);
-			Map<String,QueryBody> actionQueryBody=JSON.parseObject(fileContent,new TypeReference<Map<String,QueryBody>>(){});
+			Map<String,T> actionQueryBody=JSON.parseObject(fileContent,typeReference);
 			for(String key:actionQueryBody.keySet()){
 				ret.put(key,actionQueryBody.get(key));
 			}
