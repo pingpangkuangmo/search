@@ -112,9 +112,11 @@ public class MapUtil {
 				}
 				if(baseListObj && obj!=null){
 					Object base=obj.get(baseLists.get(objName));
-					if(base!=null && !secondObj.contains(obj)){
+					if(base!=null && !secondObj.contains(base)){
 						secondObj.add(base);
 					}
+				}else if(!baseListObj && obj!=null){
+					secondObj.add(obj);
 				}
 			}
 		}

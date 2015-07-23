@@ -60,31 +60,38 @@ public class ListFormFormatter implements FormFormatter{
 			return fatherTotal;
 		}else{
 			for(String objName:objNames){
-				List<Map<String,Object>> objs=null;
-				Object oldObjs=equalsFather.get(objName);
-				if(oldObjs==null){
-					objs=new ArrayList<Map<String,Object>>();
-					equalsFather.put(objName,objs);
-				}else if(oldObjs instanceof Map){
-					objs=new ArrayList<Map<String,Object>>();
-					objs.add((Map<String, Object>) oldObjs);
-					equalsFather.put(objName,objs);
-				}else if(oldObjs instanceof List){
-					objs=(List<Map<String, Object>>) oldObjs;
-				}
+				String[] parts=objName.split("\\.");
+				int len=parts.length;
 				Map<String,Object> obj=(Map<String, Object>)fatherTotal.get(objName);
-				boolean exitsSonItem=false;
-				for(Map<String,Object> objItem:objs){
-					if(MapUtil.compareMapEquals(objItem,obj)){
-						exitsSonItem=true;
-						break;
+				if(len==1){
+					List<Map<String,Object>> objs=null;
+					Object oldObjs=equalsFather.get(objName);
+					if(oldObjs==null){
+						objs=new ArrayList<Map<String,Object>>();
+						equalsFather.put(objName,objs);
+					}else if(oldObjs instanceof Map){
+						objs=new ArrayList<Map<String,Object>>();
+						objs.add((Map<String, Object>) oldObjs);
+						equalsFather.put(objName,objs);
+					}else if(oldObjs instanceof List){
+						objs=(List<Map<String, Object>>) oldObjs;
 					}
-				}
-				if(!exitsSonItem){
-					if(!MapUtil.mapValueEmpty(obj)){
-						objs.add(obj);
+					boolean exitsSonItem=false;
+					for(Map<String,Object> objItem:objs){
+						if(MapUtil.compareMapEquals(objItem,obj)){
+							exitsSonItem=true;
+							break;
+						}
 					}
+					if(!exitsSonItem){
+						if(!MapUtil.mapValueEmpty(obj)){
+							objs.add(obj);
+						}
+					}
+				}else if(len==2){
+					addItemToList(equalsFather,obj,objName, parts,q.getBaseLists());
 				}
+				
 			}
 			for(String listName:listNames){
 				List<Object> objs=(List<Object>)equalsFather.get(listName);
@@ -105,7 +112,34 @@ public class ListFormFormatter implements FormFormatter{
 			return null;
 		}
 	}
-
 	
-
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private void addItemToList(Map<String,Object> equalsFather,Map<String,Object> dataItem,
+			String objName,String[] parts,Map<String,String> baseLists){
+		boolean baseListObj=false;
+		if(baseLists.containsKey(objName)){
+			baseListObj=true;
+		}
+		Object prefixObj=equalsFather.get(parts[0]);
+		if(prefixObj!=null && prefixObj instanceof Map){
+			Map<String,Object> firstMap=((Map<String,Object>)prefixObj);
+			ArrayList<Object> secondObj=(ArrayList<Object>) firstMap.get(parts[1]);
+			if(secondObj==null){
+				secondObj=new ArrayList<Object>();
+				firstMap.put(parts[1],secondObj);
+			}
+			if(baseListObj && dataItem!=null){
+				Object base=dataItem.get(baseLists.get(objName));
+				if(base!=null && !secondObj.contains(base)){
+					if(base instanceof List){
+						secondObj.addAll((List)base);
+					}else{
+						secondObj.add(base);
+					}
+				}
+			}else if(!baseListObj && dataItem!=null){
+				secondObj.add(dataItem);
+			}
+		}
+	}
 }
