@@ -3,6 +3,7 @@ package com.dboper.search.observer;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
@@ -24,13 +25,20 @@ public class ComplexQueryFileListener extends FileAlterationListenerAdaptor{
 	
 	@Override
 	public void onFileChange(File file) {
-		InputStream in;
+		InputStream in=null;
 		try {
 			in = new FileInputStream(file);
 			processComplexQueryFileChange.processComplexQueryBodyChange(FileUtil.getTFromInputStream(in,
 					new TypeReference<Map<String,ComplexQueryBody>>(){}),file.getName());
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
+		}
+		if(in!=null){
+			try {
+				in.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 

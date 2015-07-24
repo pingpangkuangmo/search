@@ -44,12 +44,22 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	
 	private String tablesPath="tablesPath";
 	
+	private String excelConfig="excelConfig";
+	
 	private boolean monitorQueryFile=false;
 	
 	private boolean monitorRelationFile=false;
 	
 	private boolean monitorBaseRelationFiles=false;
 	
+	public String getExcelConfig() {
+		return excelConfig;
+	}
+
+	public void setExcelConfig(String excelConfig) {
+		this.excelConfig = excelConfig;
+	}
+
 	public void addProcessorHandler(String name,ProcessorHandler processorHandler){
 		processorHandlers.put(name, processorHandler);
 	}
