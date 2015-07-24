@@ -56,13 +56,20 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 	 */
 	private List<ProcessUnit<? extends HashMap<String,Object>>> processUnits;
 	
+	private Map<String,ProcessorHandler> processorHandlers=new HashMap<String,ProcessorHandler>();
+	
 	@Override
 	public void init() {
+		initProcessorHandlers();
 		initQueryBodyFiles();
 		initProcessUnits();
 		sqlService.init();
 	}
 	
+	private void initProcessorHandlers() {
+		processorHandlers.putAll(config.getProcessorHandlers());
+	}
+
 	/**
 	 * 初始化时要加载QueryBody的配置文件
 	 */
@@ -244,16 +251,40 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 	private List<Map<String,Object>> process(List<Map<String, Object>> data,QueryBody q){
 		data=processData(data,q);
 		List<String> deleteColumns=q.getDeleteColumns();
-		if(deleteColumns!=null && deleteColumns.size()>0){
+		List<String> processors=q.getProcessors();
+		boolean hasDeleteColumns=deleteColumns!=null && deleteColumns.size()>0;
+		List<ProcessorHandler> processorHandlers=getProcessorHandlers(processors);
+		boolean hasProcessors=processorHandlers!=null && processorHandlers.size()>0;
+		if(hasDeleteColumns || hasProcessors){
 			for(Map<String,Object> dataItem:data){
-				for(String deleteColumn:deleteColumns){
-					dataItem.remove(deleteColumn.substring(deleteColumn.indexOf(".")+1));
+				if(hasDeleteColumns){
+					for(String deleteColumn:deleteColumns){
+						dataItem.remove(deleteColumn.substring(deleteColumn.indexOf(".")+1));
+					}
+				}
+				if(hasProcessors){
+					for(ProcessorHandler item:processorHandlers){
+						item.processDataItem(dataItem);
+					}
 				}
 			}
 		}
 		return data;
 	}
 	
+	private List<ProcessorHandler> getProcessorHandlers(List<String> processors) {
+		List<ProcessorHandler> ret=new ArrayList<ProcessorHandler>();
+		if(processors!=null && processors.size()>0){
+			for(String item:processors){
+				ProcessorHandler processorHandler=processorHandlers.get(item);
+				if(processorHandler!=null){
+					ret.add(processorHandler);
+				}			
+			}
+		}
+		return ret;
+	}
+
 	public Map<String,Object> selectOne(QueryBody q){
 		return getOne(select(q));
 	}

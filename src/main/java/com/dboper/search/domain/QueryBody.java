@@ -31,6 +31,8 @@ public class QueryBody implements Cloneable{
 	
 	private Map<String,String> baseLists=new HashMap<String,String>();
 	
+	private List<String> processors=new ArrayList<String>();
+	
 	//传输数据用，不用于查询配置
 	private boolean hasSon=false;
 	private String fatherEntity;
@@ -42,6 +44,14 @@ public class QueryBody implements Cloneable{
 	@Override
 	public QueryBody clone() throws CloneNotSupportedException {
 		return (QueryBody)super.clone();
+	}
+	
+	public List<String> getProcessors() {
+		return processors;
+	}
+
+	public void setProcessors(List<String> processors) {
+		this.processors = processors;
 	}
 
 	public Map<String, String> getBaseLists() {

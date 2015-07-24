@@ -1,11 +1,14 @@
 package com.dboper.search.config;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import com.dboper.search.ProcessorHandler;
 import com.dboper.search.format.value.ValueFormatter;
 import com.dboper.search.observer.ObserverConfig;
 import com.dboper.search.relation.TablesRelationService;
@@ -24,6 +27,8 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	private List<SqlParamsHandler> sqlParamsHandlers;
 	
 	private List<ValueFormatter> formatters;
+	
+	private Map<String,ProcessorHandler> processorHandlers=new HashMap<String,ProcessorHandler>();
 	
 	private String queryFileDirectory="query";
 	
@@ -45,6 +50,18 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	
 	private boolean monitorBaseRelationFiles=false;
 	
+	public void addProcessorHandler(String name,ProcessorHandler processorHandler){
+		processorHandlers.put(name, processorHandler);
+	}
+	
+	public Map<String, ProcessorHandler> getProcessorHandlers() {
+		return processorHandlers;
+	}
+
+	public void setProcessorHandlers(Map<String, ProcessorHandler> processorHandlers) {
+		this.processorHandlers = processorHandlers;
+	}
+
 	public String getComplexQueryFileDirectory() {
 		return complexQueryFileDirectory;
 	}
