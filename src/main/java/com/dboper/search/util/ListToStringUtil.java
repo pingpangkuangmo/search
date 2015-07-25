@@ -19,11 +19,24 @@ public class ListToStringUtil {
 			if(GroupByUtils.containsGroupKey(obj)){
 				str.append(obj+join);
 			}else{
-				str.append(tablePrefix+obj+join);
+				if(obj.indexOf(tablePrefix)==0){
+					str.append(obj+join);
+				}else{
+					str.append(tablePrefix+obj+join);
+				}
 			}
 		}
 		str.delete(str.length()-join.length(),str.length());
 		return str.toString();
+	}
+	
+	public static String getFullTable(String table,String tablePrefix){
+		if(table!=null && tablePrefix!=null){
+			if(table.indexOf(tablePrefix)!=0){
+				return tablePrefix+table;
+			}
+		}
+		return table;
 	}
 	
 }
