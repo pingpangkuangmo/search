@@ -6,8 +6,8 @@ import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.monitor.FileAlterationListener;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
@@ -19,7 +19,8 @@ public class ObserverModule{
 	private ConcurrentHashMap<String,ObserverItem> observerItems=new ConcurrentHashMap<String, ObserverItem>();
 	private ConcurrentHashMap<String,FileAlterationMonitor> monitors=new ConcurrentHashMap<String,FileAlterationMonitor>();
 	ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-	private final Log logger = LogFactory.getLog(getClass());
+	
+	private final Logger logger=LoggerFactory.getLogger(ObserverModule.class);
 	
 	
 	public void addObserverItem(ObserverItem observerItem){
@@ -37,13 +38,13 @@ public class ObserverModule{
 					FileAlterationMonitor monitor=new FileAlterationMonitor(observerItem.getInterval(),observer);
 					monitors.put(observerItemName,monitor);
 					monitor.start();
-					logger.warn("对于"+observerItemName+"初始化监控完成");
+					logger.info("对于"+observerItemName+"初始化监控完成");
 				}else{
-					logger.warn("对于"+observerItemName+"初始化监控时没有找到相应的资源文件");
+					logger.info("对于"+observerItemName+"初始化监控时没有找到相应的资源文件");
 				}
 			}catch (Exception e) {
 				e.printStackTrace();
-				logger.warn("对于"+observerItemName+"初始化监控时失败");
+				logger.info("对于"+observerItemName+"初始化监控时失败");
 			}
 		}
 	}

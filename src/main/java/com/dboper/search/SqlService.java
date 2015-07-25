@@ -6,8 +6,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -31,7 +31,7 @@ public class SqlService implements Bootstrap{
 	@Autowired
 	private TablesRelationServiceCache tablesRelationServiceCache;
 	
-	private final Log logger = LogFactory.getLog(SqlService.class);
+	private final Logger logger=LoggerFactory.getLogger(SqlService.class);
 	
 	private List<SqlParamsHandler> sqlParamsHandlers;
 	

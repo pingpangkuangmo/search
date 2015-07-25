@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -37,7 +37,7 @@ public class TablesRelationServiceCache implements Bootstrap{
 	
 	private TableColumnsModule tableColumnsModule;
 	
-	private final Log logger = LogFactory.getLog(getClass());
+	private final Logger logger=LoggerFactory.getLogger(TablesRelationServiceCache.class);
 	
 	@Override
 	public void init() {
@@ -81,10 +81,10 @@ public class TablesRelationServiceCache implements Bootstrap{
 			relation=this.tablesRelationPropertyService.getRelation(q,tableColumnsModule);
 		}
 		if(StringUtils.hasLength(relation)){
-			logger.warn("使用了tablesPath来寻找表之间的连接关系："+relation);
+			logger.info("使用了tablesPath来寻找表之间的连接关系："+relation);
 			return relation;
 		}
-		logger.warn("tablesPath没有找到连接关系，使用了columns和params字段来推断表之间的连接关系");
+		logger.info("tablesPath没有找到连接关系，使用了columns和params字段来推断表之间的连接关系");
 		tableColumnsModule.processQueryBodyTableCoumns(q,null);
 		List<String> tables=new ArrayList<String>();
 		for(String column:q.getColumns()){
