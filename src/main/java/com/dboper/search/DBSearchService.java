@@ -33,6 +33,7 @@ import com.dboper.search.observer.ObserverModuleUtil;
 import com.dboper.search.observer.ProcessComplexQueryFileChange;
 import com.dboper.search.observer.ProcessQueryFileChange;
 import com.dboper.search.observer.QueryFileListener;
+import com.dboper.search.sqlparams.SqlParamsParseResult;
 import com.dboper.search.util.FileUtil;
 import com.dboper.search.util.GroupColumnsUtils;
 import com.dboper.search.util.MapUtil;
@@ -120,11 +121,15 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 			}
 		}
 		long sqlParseStartTime=System.currentTimeMillis();
-		String sql=sqlService.getSql(q);
+		SqlParamsParseResult sqlParamsParseResult=sqlService.getSqlParamsResult(q);
+		String sql=sqlParamsParseResult.getBaseWhereSql().toString();
+		List<Object> arguments=sqlParamsParseResult.getArguments();
+		logger.info("查询构建的sql为:{}",sql);
+		logger.info("查询构建的sql的arguments为:{}",arguments); 
 		if(StringUtils.hasLength(sql)){
 			long sqlSatrtTime=System.currentTimeMillis();
 			logger.info("解析成sql花费了:{} ms",sqlSatrtTime-sqlParseStartTime);
-			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql);
+			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql,arguments.toArray());
 			String unionTablesPath=q.getUnionTablesPath();
 			if(StringUtils.hasLength(unionTablesPath)){
 				QueryBody unionQ=new QueryBody();
@@ -137,10 +142,12 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 				unionQ.setGroupColumns(originGroupColumns);
 				unionQ.setTablesPath(unionTablesPath);
 				unionQ.setParams(q.getUnionParams());
-				String unionSql=sqlService.getSql(unionQ);
+				SqlParamsParseResult unionSqlParamsParseResult=sqlService.getSqlParamsResult(q);
+				String unionSql=unionSqlParamsParseResult.getBaseWhereSql().toString();
+				List<Object> unionArguments=unionSqlParamsParseResult.getArguments();
 				if(StringUtils.hasLength(unionSql)){
 					logger.info("使用了联合查询");
-					data.addAll(config.getJdbcTemplate().queryForList(unionSql));
+					data.addAll(config.getJdbcTemplate().queryForList(unionSql,unionArguments.toArray()));
 				}
 			}
 			long sqlEndTime=System.currentTimeMillis();

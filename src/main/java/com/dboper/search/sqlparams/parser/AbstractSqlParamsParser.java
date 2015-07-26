@@ -52,7 +52,7 @@ public abstract class AbstractSqlParamsParser implements SqlParamsParser{
 	@Override
 	public SqlParamsParseItemResult getParamsResult(String key, Object value,
 			String oper) {
-		return doStringValueParams(key,processStringValue(value), oper);
+		return doStringValueParams(key,value, oper);
 	}
 	
 	@Override

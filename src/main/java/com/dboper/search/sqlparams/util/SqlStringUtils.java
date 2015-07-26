@@ -9,6 +9,10 @@ public class SqlStringUtils {
 
 	public static Object processString(Object obj){
 		if(isString(obj)){
+			String tmp=obj+"";
+			if(tmp.startsWith("'") && tmp.endsWith("'")){
+				return tmp;
+			}
 			obj="'"+obj+"'";
 		}
 		if(obj!=null && (obj instanceof Collection || obj instanceof Array)){
