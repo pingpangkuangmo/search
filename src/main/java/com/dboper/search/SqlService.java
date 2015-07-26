@@ -41,7 +41,7 @@ public class SqlService implements Bootstrap{
 	}
 	
 	private void registerSqlParamsHandlers() {
-		defaultSqlParamsHandler=new DefaultSqlParamsHandler();
+		defaultSqlParamsHandler=new DefaultSqlParamsHandler(config.getTablePrefix());
 		List<SqlParamsParser> customerSqlParamsHandlers=config.getSqlParamsParsers();
 		if(customerSqlParamsHandlers!=null){
 			defaultSqlParamsHandler.registerSqlParamsHandler(customerSqlParamsHandlers);

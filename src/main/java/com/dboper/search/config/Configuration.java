@@ -44,7 +44,7 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 	
 	private String tablesPath="tablesPath";
 	
-	private boolean monitorQueryFile=false;
+	private boolean monitorQueryFile=true;
 	
 	private boolean monitorRelationFile=false;
 	
