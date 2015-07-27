@@ -10,7 +10,6 @@ import java.util.Map;
 import org.apache.commons.io.monitor.FileAlterationListener;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -19,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import com.alibaba.fastjson.TypeReference;
+import com.dboper.search.Bootstrap;
 import com.dboper.search.DBSearchService;
 import com.dboper.search.config.Configuration;
 import com.dboper.search.excel.base.DefaultExportExcelService;
@@ -32,7 +32,7 @@ import com.dboper.search.observer.ProcessExcelFileChange;
 import com.dboper.search.util.FileUtil;
 
 @Service
-public class ExcelService implements InitializingBean,ProcessExcelFileChange{
+public class ExcelService implements Bootstrap,ProcessExcelFileChange{
 	
 	private final Log logger = LogFactory.getLog(DBSearchService.class);
 	
@@ -54,13 +54,13 @@ public class ExcelService implements InitializingBean,ProcessExcelFileChange{
 					excelConfigBody.getColumnLabels(),datas,excelConfigBody.getColumnsType());
 		}
 	}
-
+	
 	@Override
-	public void afterPropertiesSet() throws Exception {
+	public void init() {
 		loadExcelConfig();
 		initObserverModule();
 	}
-	
+
 	private void initObserverModule() {
 		ObserverModule observerModule=ObserverModuleUtil.getObserverModule();
 		if(config.isMonitorQueryFile()){
