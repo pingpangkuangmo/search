@@ -384,9 +384,9 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 		for(Map<String,Object> dataItem:data){
 			Map<String,Object> dataItemResult=processPerData(dataItem,ret,contexts,q);
 			if(dataItemResult!=null){
-				dataItem.putAll(q.getConstantData());
+				dataItemResult.putAll(q.getConstantData());
 				if(haveGroupColumns){
-					String currentDataInfo=getCurrentDataInfo(dataItem,groupColumns);
+					String currentDataInfo=getCurrentDataInfo(dataItemResult,groupColumns);
 					if(!exitsDataInfo.contains(currentDataInfo)){
 						exitsDataInfo.add(currentDataInfo);
 						ret.add(dataItemResult);
