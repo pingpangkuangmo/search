@@ -1,25 +1,20 @@
 package com.dboper.search;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import com.dboper.search.config.Configuration;
 import com.dboper.search.domain.QueryBody;
 import com.dboper.search.relation.TablesRelationServiceCache;
-import com.dboper.search.sqlparams.DefaultSqlParamsParser;
-import com.dboper.search.sqlparams.InSqlParamsParser;
-import com.dboper.search.sqlparams.SqlParamsHandler;
-import com.dboper.search.sqlparams.TimeSqlParamsParser;
+import com.dboper.search.sqlparams.DefaultSqlParamsHandler;
+import com.dboper.search.sqlparams.SqlParamsParseResult;
+import com.dboper.search.sqlparams.parser.SqlParamsParser;
+import com.dboper.search.sqlparams.util.StringUtils;
 import com.dboper.search.util.ListToStringUtil;
 
 @Service
@@ -31,9 +26,9 @@ public class SqlService implements Bootstrap{
 	@Autowired
 	private TablesRelationServiceCache tablesRelationServiceCache;
 	
-	private final Log logger = LogFactory.getLog(SqlService.class);
+	private final Logger logger=LoggerFactory.getLogger(SqlService.class);
 	
-	private List<SqlParamsHandler> sqlParamsHandlers;
+	private DefaultSqlParamsHandler defaultSqlParamsHandler;
 	
 	@Override
 	public void init() {
@@ -46,17 +41,87 @@ public class SqlService implements Bootstrap{
 	}
 	
 	private void registerSqlParamsHandlers() {
-		sqlParamsHandlers=new ArrayList<SqlParamsHandler>();
-		sqlParamsHandlers.add(new DefaultSqlParamsParser());
-		sqlParamsHandlers.add(new InSqlParamsParser());
-		sqlParamsHandlers.add(new TimeSqlParamsParser());
-		List<SqlParamsHandler> customerSqlParamsHandlers=config.getSqlParamsHandlers();
+		defaultSqlParamsHandler=new DefaultSqlParamsHandler(config.getTablePrefix());
+		List<SqlParamsParser> customerSqlParamsHandlers=config.getSqlParamsParsers();
 		if(customerSqlParamsHandlers!=null){
-			sqlParamsHandlers.addAll(customerSqlParamsHandlers);
+			defaultSqlParamsHandler.registerSqlParamsHandler(customerSqlParamsHandlers);
 		}
+	}
+	
+	public SqlParamsParseResult getSqlParamsResult(QueryBody q){
+		return doSqlParse(q,true);
 	}
 
 	public String getSql(QueryBody q){
+		return doSqlParse(q,false).getBaseWhereSql().toString();
+	}
+	
+	private SqlParamsParseResult doSqlParse(QueryBody q,boolean isPlaceHolder){
+		SqlParamsParseResult sqlResult=new SqlParamsParseResult();
+		if(q==null){
+			return sqlResult;
+		}
+		String tablePrefix=config.getTablePrefix();
+		String relation=tablesRelationServiceCache.getTablesRelation(q);
+		logger.info("查询得出的表之间的relation为：{}",relation);
+		if(!StringUtils.isNotEmpty(relation)){
+			return sqlResult;
+		}
+		List<String> columns=q.getColumns();
+		Map<String,Object> params=q.getParams();
+		StringBuilder sql=new StringBuilder("select ");
+		if(q.isDistinct()){
+			sql.append(" distinct ");
+		}
+		if(columns.get(0).contains("*")){
+			sql.append("*");
+		}else{
+			sql.append(ListToStringUtil.arrayToStringAliases(columns,",",tablePrefix));
+		}
+		sql.append(" from ");
+		sql.append(relation);
+		if(params!=null && !params.isEmpty()){
+			if(isPlaceHolder){
+				SqlParamsParseResult sqlParamsParseResult=defaultSqlParamsHandler.getSqlWhereParamsResult(params);
+				String baseWhereSql=sqlParamsParseResult.getBaseWhereSql().toString();
+				if(StringUtils.isNotEmpty(baseWhereSql)){
+					sql.append(" where ").append(baseWhereSql);
+					sqlResult.setArguments(sqlParamsParseResult.getArguments());
+				}
+			}else{
+				String baseWhereSql=defaultSqlParamsHandler.getSqlWhereParams(params);
+				if(StringUtils.isNotEmpty(baseWhereSql)){
+					sql.append(" where ").append(baseWhereSql);
+				}
+			}
+		}
+		String groupBy=q.getGroupBy();
+		if(StringUtils.isNotEmpty(groupBy)){
+			sql.append(" group by ").append(groupBy).append(" ");
+		}
+		List<String> order_by=q.getOrder_by();
+		if(order_by!=null && order_by.size()>0){
+			sql.append(" order by ");
+			for(String item:order_by){
+				sql.append(ListToStringUtil.getFullTable(item,tablePrefix)).append(",");
+			}
+			sql.deleteCharAt(sql.length()-1);
+		}
+		Integer limit=q.getLimit();
+		if(limit!=null && limit>0){
+			Integer start=q.getStart();
+			if(start!=null && start>0){
+				sql.append(" limit "+start+","+limit);
+			}else{
+				sql.append(" limit ").append(limit);
+			}
+		}
+		sqlResult.setBaseWhereSql(sql);
+		return sqlResult;
+	}
+	
+
+	/*public String getSql(QueryBody q){
 		if(q==null){
 			return "";
 		}
@@ -156,15 +221,6 @@ public class SqlService implements Bootstrap{
 		return "";
 	}
 
-	private String handleKeyValue(String key, Object value, String oper) {
-		for(SqlParamsHandler sqlParamsHandler:sqlParamsHandlers){
-			if(sqlParamsHandler.support(oper)){
-				return sqlParamsHandler.getParams(key, value, oper);
-			}
-		}
-		return "";
-	}
-
 	@SuppressWarnings("rawtypes")
 	private Object processStringValue(Object obj) {
 		if(isString(obj)){
@@ -190,7 +246,7 @@ public class SqlService implements Bootstrap{
 		}else{
 			return false;
 		}
-	}
+	}*/
 	
 
 

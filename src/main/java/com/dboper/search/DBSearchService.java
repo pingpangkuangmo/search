@@ -8,8 +8,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.monitor.FileAlterationListener;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -33,6 +33,7 @@ import com.dboper.search.observer.ObserverModuleUtil;
 import com.dboper.search.observer.ProcessComplexQueryFileChange;
 import com.dboper.search.observer.ProcessQueryFileChange;
 import com.dboper.search.observer.QueryFileListener;
+import com.dboper.search.sqlparams.SqlParamsParseResult;
 import com.dboper.search.util.FileUtil;
 import com.dboper.search.util.GroupColumnsUtils;
 import com.dboper.search.util.MapUtil;
@@ -40,7 +41,7 @@ import com.dboper.search.util.MapUtil;
 @Service
 public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQueryFileChange,Bootstrap{
 	
-	private final Log logger = LogFactory.getLog(DBSearchService.class);
+	private final Logger logger=LoggerFactory.getLogger(DBSearchService.class);
 
 	@Autowired
 	private Configuration config;
@@ -120,11 +121,15 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 			}
 		}
 		long sqlParseStartTime=System.currentTimeMillis();
-		String sql=sqlService.getSql(q);
+		SqlParamsParseResult sqlParamsParseResult=sqlService.getSqlParamsResult(q);
+		String sql=sqlParamsParseResult.getBaseWhereSql().toString();
+		List<Object> arguments=sqlParamsParseResult.getArguments();
+		logger.info("查询构建的sql为:{}",sql);
+		logger.info("查询构建的sql的arguments为:{}",arguments); 
 		if(StringUtils.hasLength(sql)){
 			long sqlSatrtTime=System.currentTimeMillis();
-			logger.warn("解析成sql花费了:"+(sqlSatrtTime-sqlParseStartTime)+" ms");
-			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql);
+			logger.info("解析成sql花费了:{} ms",sqlSatrtTime-sqlParseStartTime);
+			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql,arguments.toArray());
 			String unionTablesPath=q.getUnionTablesPath();
 			if(StringUtils.hasLength(unionTablesPath)){
 				QueryBody unionQ=new QueryBody();
@@ -137,14 +142,16 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 				unionQ.setGroupColumns(originGroupColumns);
 				unionQ.setTablesPath(unionTablesPath);
 				unionQ.setParams(q.getUnionParams());
-				String unionSql=sqlService.getSql(unionQ);
+				SqlParamsParseResult unionSqlParamsParseResult=sqlService.getSqlParamsResult(q);
+				String unionSql=unionSqlParamsParseResult.getBaseWhereSql().toString();
+				List<Object> unionArguments=unionSqlParamsParseResult.getArguments();
 				if(StringUtils.hasLength(unionSql)){
-					logger.warn("使用了联合查询");
-					data.addAll(config.getJdbcTemplate().queryForList(unionSql));
+					logger.info("使用了联合查询");
+					data.addAll(config.getJdbcTemplate().queryForList(unionSql,unionArguments.toArray()));
 				}
 			}
 			long sqlEndTime=System.currentTimeMillis();
-			logger.warn("sql查询花费了:"+(sqlEndTime-sqlSatrtTime)+" ms");
+			logger.info("sql查询花费了:{} ms",sqlEndTime-sqlSatrtTime);
 			return process(data,q);
 		}else{
 			return new ArrayList<Map<String,Object>>();

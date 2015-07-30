@@ -12,7 +12,7 @@ import com.dboper.search.ProcessorHandler;
 import com.dboper.search.format.value.ValueFormatter;
 import com.dboper.search.observer.ObserverConfig;
 import com.dboper.search.relation.TablesRelationService;
-import com.dboper.search.sqlparams.SqlParamsHandler;
+import com.dboper.search.sqlparams.parser.SqlParamsParser;
 
 @Service
 public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTablesRelationConfig,TableColumnsConfig{
@@ -24,9 +24,9 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 
 	private List<TablesRelationService> tablesRelationServices;
 	
-	private List<SqlParamsHandler> sqlParamsHandlers;
-	
 	private List<ValueFormatter> formatters;
+	
+	private List<SqlParamsParser> sqlParamsParsers;
 	
 	private Map<String,ProcessorHandler> processorHandlers=new HashMap<String,ProcessorHandler>();
 	
@@ -58,6 +58,26 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 
 	public void setExcelConfig(String excelConfig) {
 		this.excelConfig = excelConfig;
+	}
+
+	public List<SqlParamsParser> getSqlParamsParsers() {
+		return sqlParamsParsers;
+	}
+
+	public void setSqlParamsParsers(List<SqlParamsParser> sqlParamsParsers) {
+		this.sqlParamsParsers = sqlParamsParsers;
+	}
+
+	public String getTablesPath() {
+		return tablesPath;
+	}
+
+	public void setTablesPath(String tablesPath) {
+		this.tablesPath = tablesPath;
+	}
+
+	public void setTableColumnsDir(String tableColumnsDir) {
+		this.tableColumnsDir = tableColumnsDir;
 	}
 
 	public void addProcessorHandler(String name,ProcessorHandler processorHandler){
@@ -151,14 +171,6 @@ public class Configuration implements TableDBConfig,ObserverConfig,BaseTwoTables
 
 	public void setRelationDir(String relationDir) {
 		this.relationDir = relationDir;
-	}
-
-	public List<SqlParamsHandler> getSqlParamsHandlers() {
-		return sqlParamsHandlers;
-	}
-
-	public void setSqlParamsHandlers(List<SqlParamsHandler> sqlParamsHandlers) {
-		this.sqlParamsHandlers = sqlParamsHandlers;
 	}
 
 	public String getBaseRelationFilesDir() {

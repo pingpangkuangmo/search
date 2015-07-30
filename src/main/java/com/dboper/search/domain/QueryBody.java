@@ -11,7 +11,6 @@ public class QueryBody implements Cloneable{
 
 	private List<String> columns=new ArrayList<String>();
 	private Map<String,Object> params=new HashMap<String,Object>();
-	private String order_by="";
 	private Integer limit=Integer.MAX_VALUE;
 	private Integer start=0;
 	private boolean distinct=true;
@@ -33,6 +32,8 @@ public class QueryBody implements Cloneable{
 	
 	private List<String> processors=new ArrayList<String>();
 	
+	private List<String> order_by=new ArrayList<String>();
+	
 	//传输数据用，不用于查询配置
 	private boolean hasSon=false;
 	private String fatherEntity;
@@ -46,6 +47,14 @@ public class QueryBody implements Cloneable{
 		return (QueryBody)super.clone();
 	}
 	
+	public List<String> getOrder_by() {
+		return order_by;
+	}
+
+	public void setOrder_by(List<String> order_by) {
+		this.order_by = order_by;
+	}
+
 	public List<String> getProcessors() {
 		return processors;
 	}
@@ -182,14 +191,6 @@ public class QueryBody implements Cloneable{
 
 	public void setParams(Map<String, Object> params) {
 		this.params = params;
-	}
-
-	public String getOrder_by() {
-		return order_by;
-	}
-
-	public void setOrder_by(String order_by) {
-		this.order_by = order_by;
 	}
 
 	public Integer getLimit() {
