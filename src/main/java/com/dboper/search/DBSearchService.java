@@ -153,6 +153,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 	
 	@SuppressWarnings("unchecked")
 	public List<Map<String,Object>> selectComplex(ComplexQueryBody complexQueryBody){
+		long startTime=System.currentTimeMillis();
 		if(complexQueryBody==null){
 			return new ArrayList<Map<String,Object>>();
 		}
@@ -193,6 +194,8 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 				}
 			}
 		}
+		long endTime=System.currentTimeMillis();
+		logger.warn("复杂查询总共花费时间为："+(endTime-startTime)+" ms");
 		return firstDatas;
 	}
 	
