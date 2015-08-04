@@ -127,6 +127,9 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 	}
 	
 	private List<Map<String, Object>> getOriginQueryResult(QueryBody q){
+		if(q==null){
+			return new ArrayList<Map<String,Object>>();
+		}
 		List<String> groupColumns=q.getGroupColumns();
 		List<String> originGroupColumns=new ArrayList<String>();
 		if(groupColumns!=null){
