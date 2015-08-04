@@ -112,6 +112,21 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 	}
 
 	public List<Map<String,Object>> select(QueryBody q){
+		List<Map<String,Object>> ret=getOriginQueryResult(q);
+		if(ret!=null && ret.size()>0){
+			return process(ret,q);
+		}
+		return ret;
+	}
+	
+	public List<Map<String,Object>> select(QueryBody q1,QueryBody q2){
+		List<Map<String,Object>> ret1=getOriginQueryResult(q1);
+		List<Map<String,Object>> ret2=getOriginQueryResult(q2);
+		ret1.addAll(ret2);
+		return process(ret1,q1);
+	}
+	
+	private List<Map<String, Object>> getOriginQueryResult(QueryBody q){
 		List<String> groupColumns=q.getGroupColumns();
 		List<String> originGroupColumns=new ArrayList<String>();
 		if(groupColumns!=null){
@@ -143,9 +158,15 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 					data.addAll(config.getJdbcTemplate().queryForList(unionSql));
 				}
 			}
+			Map<String,Object> originConstantData=q.getOriginConstantData();
+			if(originConstantData!=null && originConstantData.size()>0){
+				for(Map<String,Object> item:data){
+					item.putAll(originConstantData);
+				}
+			}
 			long sqlEndTime=System.currentTimeMillis();
 			logger.warn("sql查询花费了:"+(sqlEndTime-sqlSatrtTime)+" ms");
-			return process(data,q);
+			return data;
 		}else{
 			return new ArrayList<Map<String,Object>>();
 		}
@@ -301,9 +322,20 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 	}
 	
 	public List<Map<String,Object>> select(String action,Map<String,Object> params,Map<String,Object> unionParams){
+		if(!StringUtils.hasLength(action)){
+			return new ArrayList<Map<String,Object>>();
+		}
+		String[] actions=action.split("__");
+		if(actions.length==2){
+			return select(getQueryBody(actions[0], params, unionParams),getQueryBody(actions[1], params, unionParams));
+		}
+		return select(getQueryBody(actions[0], params, unionParams));
+	}
+	
+	private QueryBody getQueryBody(String action,Map<String,Object> params,Map<String,Object> unionParams){
 		QueryBody q=querys.get(action);
 		if(q==null){
-			return new ArrayList<Map<String,Object>>();
+			return null;
 		}
 		QueryBody copy;
 		try {
@@ -328,7 +360,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 			copy.setParams(newParams);
 			copy.setUnionParams(newUnionParams);
 		}
-		return select(copy);
+		return copy;
 	}
 	
 	public Map<String,Object> selectOne(String action,Map<String,Object> params){

@@ -25,6 +25,8 @@ public class QueryBody implements Cloneable{
 	
 	private Map<String,Object> constantData=new HashMap<String,Object>();
 	
+	private Map<String,Object> originConstantData=new HashMap<String,Object>();
+	
 	private String unionTablesPath;
 	
 	private Map<String,Object> unionParams=new HashMap<String,Object>();
@@ -46,6 +48,14 @@ public class QueryBody implements Cloneable{
 		return (QueryBody)super.clone();
 	}
 	
+	public Map<String, Object> getOriginConstantData() {
+		return originConstantData;
+	}
+
+	public void setOriginConstantData(Map<String, Object> originConstantData) {
+		this.originConstantData = originConstantData;
+	}
+
 	public List<String> getProcessors() {
 		return processors;
 	}
