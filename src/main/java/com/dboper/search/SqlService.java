@@ -49,7 +49,7 @@ public class SqlService implements Bootstrap{
 	}
 	
 	public SqlParamsParseResult getSqlParamsResult(QueryBody q){
-		return doSqlParse(q,true);
+		return doSqlParse(q,false);
 	}
 
 	public String getSql(QueryBody q){

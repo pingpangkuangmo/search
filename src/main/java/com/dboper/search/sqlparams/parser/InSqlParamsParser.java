@@ -26,7 +26,15 @@ public class InSqlParamsParser extends AbstractValueSqlParamsParser{
 	 */
 	@Override
 	protected Object getStringValue(Object value) {
-		Object[] tmpValues=(Object[])getObjectValue(value);
+		Assert.notNull(value,"对于in和notIn操作，value不能为空");
+		Object[] tmpValues=null;
+		if(value.getClass().isArray()){
+			tmpValues=(Object[])value;
+		}
+		if(value instanceof Collection){
+			tmpValues=((Collection<?>)value).toArray();
+		}
+		Assert.notEmpty(tmpValues,"对于in和notIn操作，value只能为数组或者集合，并且长度必须大于0");
 		StringBuilder valueStr=new StringBuilder();
 		valueStr.append("(");
 		for(Object item:tmpValues){
@@ -39,16 +47,7 @@ public class InSqlParamsParser extends AbstractValueSqlParamsParser{
 
 	@Override
 	protected Object getObjectValue(Object value) {
-		Assert.notNull(value,"对于in和notIn操作，value不能为空");
-		Object[] tmpValues=null;
-		if(value.getClass().isArray()){
-			tmpValues=(Object[])value;
-		}
-		if(value instanceof Collection){
-			tmpValues=((Collection<?>)value).toArray();
-		}
-		Assert.notEmpty(tmpValues,"对于in和notIn操作，value只能为数组或者集合，并且长度必须大于0");
-		return tmpValues;
+		return getStringValue(value);
 	}
 
 }
