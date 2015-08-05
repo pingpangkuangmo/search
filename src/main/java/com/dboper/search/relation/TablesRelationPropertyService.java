@@ -222,7 +222,7 @@ public class TablesRelationPropertyService{
 				return System.currentTimeMillis()+"_no_cache";
 			}
 			Collections.sort(entities);
-			return ListToStringUtil.arrayToString(entities,"__")+q.getTablesPath();
+			return ListToStringUtil.arrayToString(entities,"__")+q.getTablesPath()+q.getUnionTablesPath();
 		}
 	}
 
@@ -278,28 +278,23 @@ public class TablesRelationPropertyService{
 					realLeftTable=tableLeft;
 					break;
 				}
+				String tableLeftTmp=tables[j].trim();
+				//用于处理中间表，扩展一级 organization 和 product_line都含有organization_product_lines表，所以自动把中间表加入进来
+				//需要提前准备这样的数据，只处理一层中间表，不再处理复杂的多级
+				List<String> tableTwoRelationTables=tableConfigAndRelationtables.get(tableTwo);
+				List<String> realLeftRelationTables=tableConfigAndRelationtables.get(tableLeftTmp);
+				List<String> intersection=ListUtil.intersection(tableTwoRelationTables,realLeftRelationTables);
+				if(intersection.size()>0){
+					//表示他们之间有中间表，选取中间表中的一个（中间表可能有很多，这一点也会产生很多问题，但可以通过配置解决）
+					intersectionTable=intersection.get(0);
+					logger.warn("找到能和"+tableTwo+"联接的中间表"+intersectionTable);
+					realLeftTable=tableLeftTmp;
+					break;
+				}
 			}
-			//如果都没找到能和左边相联接的表，则尝试获取他们的公共表
-			if(relation==null){
-				for(int j=i;j>=0;j--){
-					String tableLeft=tables[j].trim();
-					//用于处理中间表，扩展一级 organization 和 product_line都含有organization_product_lines表，所以自动把中间表加入进来
-					//需要提前准备这样的数据，只处理一层中间表，不再处理复杂的多级
-					List<String> tableTwoRelationTables=tableConfigAndRelationtables.get(tableTwo);
-					List<String> realLeftRelationTables=tableConfigAndRelationtables.get(tableLeft);
-					List<String> intersection=ListUtil.intersection(tableTwoRelationTables,realLeftRelationTables);
-					if(intersection.size()>0){
-						//表示他们之间有中间表，选取中间表中的一个（中间表可能有很多，这一点也会产生很多问题，但可以通过配置解决）
-						intersectionTable=intersection.get(0);
-						logger.info("找到能和"+tableTwo+"联接的中间表"+intersectionTable);
-						realLeftTable=tableLeft;
-						break;
-					}
-				}
-				if(realLeftTable==null){
-					logger.info("也没有找到能和"+tableTwo+"联接的中间表");
-					return "";
-				}
+			if(realLeftTable==null){
+				logger.warn("也没有找到能和"+tableTwo+"联接的中间表");
+				return "";
 			}
 			
 			//当有多个重复表出现的时候，就出bug了
