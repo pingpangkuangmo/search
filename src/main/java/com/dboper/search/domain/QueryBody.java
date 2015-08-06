@@ -35,6 +35,8 @@ public class QueryBody implements Cloneable{
 	
 	private List<String> processors=new ArrayList<String>();
 	
+	private Map<String,SonSearchBody> sonSearchs=new HashMap<String,SonSearchBody>();
+	
 	//传输数据用，不用于查询配置
 	private boolean hasSon=false;
 	private String fatherEntity;
@@ -48,6 +50,14 @@ public class QueryBody implements Cloneable{
 		return (QueryBody)super.clone();
 	}
 	
+	public Map<String, SonSearchBody> getSonSearchs() {
+		return sonSearchs;
+	}
+
+	public void setSonSearchs(Map<String, SonSearchBody> sonSearchs) {
+		this.sonSearchs = sonSearchs;
+	}
+
 	public Map<String, Object> getOriginConstantData() {
 		return originConstantData;
 	}

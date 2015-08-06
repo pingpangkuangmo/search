@@ -20,10 +20,12 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.util.StringUtils;
 
+import com.dboper.search.SqlService;
 import com.dboper.search.cache.EntityNameCache;
 import com.dboper.search.cache.EntityNameContext;
 import com.dboper.search.config.BaseTwoTablesRelationConfig;
 import com.dboper.search.domain.QueryBody;
+import com.dboper.search.domain.SonSearchBody;
 import com.dboper.search.table.TableColumnsModule;
 import com.dboper.search.util.FileUtil;
 import com.dboper.search.util.ListToStringUtil;
@@ -61,6 +63,10 @@ public class TablesRelationPropertyService{
 	private final Log logger = LogFactory.getLog(getClass());
 	
 	private static final String MANY_RELATION_FLAG="_as_";
+	
+	private static final String SON_SEARCH_PREFIX="sonSearch(";
+	
+	private static final String SON_SEARCH_SUBFIX=")";
 	
 	public TablesRelationPropertyService(BaseTwoTablesRelationConfig config){
 		this.config=config;
@@ -222,7 +228,7 @@ public class TablesRelationPropertyService{
 				return System.currentTimeMillis()+"_no_cache";
 			}
 			Collections.sort(entities);
-			return ListToStringUtil.arrayToString(entities,"__")+q.getTablesPath()+q.getUnionTablesPath();
+			return ListToStringUtil.arrayToString(entities,"__")+q.getTablesPath()+q.getUnionTablesPath()+q.getSonSearchs();
 		}
 	}
 
@@ -268,8 +274,24 @@ public class TablesRelationPropertyService{
 			String tableOne=tables[i].trim();
 			String tableTwo=tables[i+1].trim();
 			String realLeftTable=null;
+			String realTableRight=tableTwo;
 			String relation=null;
 			String intersectionTable=null;
+			if(tableTwo.startsWith(SON_SEARCH_PREFIX) && tableTwo.endsWith(SON_SEARCH_SUBFIX)){
+				if(tableTwo.length()==(SON_SEARCH_PREFIX.length()+SON_SEARCH_SUBFIX.length())){
+					logger.warn(SON_SEARCH_PREFIX+SON_SEARCH_SUBFIX+" 里面的内容为空");
+					throw new RuntimeException("参数格式不合法");
+				}
+				realTableRight=tableTwo.substring(SON_SEARCH_PREFIX.length(),tableTwo.length()-SON_SEARCH_SUBFIX.length());
+				SonSearchBody realTableRightSonSearchBody=q.getSonSearchs().get(realTableRight);
+				if(realTableRightSonSearchBody==null){
+					logger.warn("找不到 "+realTableRight+" 的sonSearchs定义");
+					throw new RuntimeException("参数格式不合法");
+				}
+				String sql=realTableRightSonSearchBody.getSql();
+				
+				continue;
+			}
 			for(int j=i;j>=0;j--){
 				String tableLeft=tables[j].trim();
 				String otherTablesStr=getSortStr(tableTwo,tableLeft,list);
@@ -334,6 +356,10 @@ public class TablesRelationPropertyService{
 		String fullRelation=sb.toString();
 		tablesRelationParseResult.put(joinStr,fullRelation);
 		return fullRelation;
+	}
+	
+	private String converterSql(String sql){
+		
 	}
 
 	//这一块需要单独独立出来，形成算法处理
