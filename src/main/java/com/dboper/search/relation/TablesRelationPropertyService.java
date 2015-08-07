@@ -359,7 +359,7 @@ public class TablesRelationPropertyService{
 	}
 	
 	private String converterSql(String sql){
-		
+		return sql;
 	}
 
 	//这一块需要单独独立出来，形成算法处理
