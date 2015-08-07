@@ -64,9 +64,9 @@ public class TablesRelationPropertyService{
 	
 	private static final String MANY_RELATION_FLAG="_as_";
 	
-	private static final String SON_SEARCH_PREFIX="sonSearch(";
+	private static final String SON_SEARCH_PREFIX="sonSearch{";
 	
-	private static final String SON_SEARCH_SUBFIX=")";
+	private static final String SON_SEARCH_SUBFIX="}";
 	
 	public TablesRelationPropertyService(BaseTwoTablesRelationConfig config){
 		this.config=config;
@@ -288,9 +288,14 @@ public class TablesRelationPropertyService{
 					logger.warn("找不到 "+realTableRight+" 的sonSearchs定义");
 					throw new RuntimeException("参数格式不合法");
 				}
-				String sql=realTableRightSonSearchBody.getSql();
+				String sql=converterSql(realTableRightSonSearchBody.getSql());
+				String sonRelation=realTableRightSonSearchBody.getRelation();
+				if(sonRelation!=null){
+					sb.append(" ").append(sql).append("").append("").append(sonRelation);
+					continue;
+				}
 				
-				continue;
+				
 			}
 			for(int j=i;j>=0;j--){
 				String tableLeft=tables[j].trim();
@@ -359,7 +364,7 @@ public class TablesRelationPropertyService{
 	}
 	
 	private String converterSql(String sql){
-		return sql;
+		return sql.replaceAll("%tprefix%","cms_");
 	}
 
 	//这一块需要单独独立出来，形成算法处理

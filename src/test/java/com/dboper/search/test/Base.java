@@ -1,5 +1,7 @@
 package com.dboper.search.test;
 
+import org.junit.Test;
+
 public class Base {
 
 	public static void main(String[] args){
@@ -12,5 +14,11 @@ public class Base {
 		}
 		
 		System.out.println("as"+null);
+	}
+	
+	@Test
+	public void testReplace(){
+		String sql="select %tprefix%virtual_directory.* from %tprefix%virtual_directory where %tprefix%virtual_directory.entity_status!='OFFLINE'";
+		System.out.println(sql.replaceAll("%tprefix%","cms_"));
 	}
 }
