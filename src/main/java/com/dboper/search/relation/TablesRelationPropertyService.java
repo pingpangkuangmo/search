@@ -291,13 +291,13 @@ public class TablesRelationPropertyService{
 					if(intersection.size()>0){
 						//表示他们之间有中间表，选取中间表中的一个（中间表可能有很多，这一点也会产生很多问题，但可以通过配置解决）
 						intersectionTable=intersection.get(0);
-						logger.warn("找到能和"+tableTwo+"联接的中间表"+intersectionTable);
+						logger.info("找到能和"+tableTwo+"联接的中间表"+intersectionTable);
 						realLeftTable=tableLeft;
 						break;
 					}
 				}
 				if(realLeftTable==null){
-					logger.warn("也没有找到能和"+tableTwo+"联接的中间表");
+					logger.info("也没有找到能和"+tableTwo+"联接的中间表");
 					return "";
 				}
 			}
