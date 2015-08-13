@@ -13,8 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
@@ -60,7 +60,7 @@ public class TablesRelationPropertyService{
 	
 	private EntityNameCache entityNameCache;
 	
-	private final Log logger = LogFactory.getLog(getClass());
+	private final Logger logger=LoggerFactory.getLogger(TablesRelationPropertyService.class);
 	
 	private static final String MANY_RELATION_FLAG="_as_";
 	
@@ -168,28 +168,28 @@ public class TablesRelationPropertyService{
 	
 	public String getRelation(QueryBody q,TableColumnsModule tableColumnsModule){
 		String cachekey=getEntityNames(q,tableColumnsModule);
-		logger.warn("拿到entityNames的cacheKey为="+cachekey);
+		logger.info("拿到entityNames的cacheKey为="+cachekey);
 		Map<String,EntityNameContext> entityNamesData=entityNameCache.get(cachekey);
 		if(entityNamesData==null){
-			logger.warn("entityNames的cacheKey:"+cachekey+" 还没有缓存");
+			logger.info("entityNames的cacheKey:"+cachekey+" 还没有缓存");
 			String relation=parseJoinStrRelation(q,tableColumnsModule);
 			if(StringUtils.hasLength(relation)){
 				//成功找到，添加到缓存
 				if(!cachekey.endsWith("_no_cache")){
 					addCache(cachekey,q.getTablesPath(),relation,q.getColumns(),q.isHasSon(),q.getFatherEntity());
-					logger.warn("entityNames的cacheKey:"+cachekey+" 添加到缓存");
+					logger.info("entityNames的cacheKey:"+cachekey+" 添加到缓存");
 				}
 			}
 			return relation;
 		}else{
 			EntityNameContext entityNameContext=entityNamesData.get(q.getTablesPath());
 			if(entityNameContext==null){
-				logger.warn("entityNames的cacheKey:"+cachekey+" 命中缓存，但是没有符合tablePath="+q.getTablesPath()+"的数据");
+				logger.info("entityNames的cacheKey:"+cachekey+" 命中缓存，但是没有符合tablePath="+q.getTablesPath()+"的数据");
 				String relation=parseJoinStrRelation(q,tableColumnsModule);
 				addCache(q.getTablesPath(),relation,q.getColumns(),entityNamesData,q.isHasSon(),q.getFatherEntity());
 				return relation;
 			}else{
-				logger.warn("entityNames的cacheKey:"+cachekey+" 命中缓存，同时有tablePath="+q.getTablesPath()+"的数据，所以直接使用缓存");
+				logger.info("entityNames的cacheKey:"+cachekey+" 命中缓存，同时有tablePath="+q.getTablesPath()+"的数据，所以直接使用缓存");
 				q.setColumns(entityNameContext.getColumns());
 				q.setHasSon(entityNameContext.getHasSon());
 				q.setFatherEntity(entityNameContext.getFatherEntity());
@@ -318,13 +318,13 @@ public class TablesRelationPropertyService{
 					if(intersection.size()>0){
 						//表示他们之间有中间表，选取中间表中的一个（中间表可能有很多，这一点也会产生很多问题，但可以通过配置解决）
 						intersectionTable=intersection.get(0);
-						logger.warn("找到能和"+tableTwo+"联接的中间表"+intersectionTable);
+						logger.info("找到能和"+tableTwo+"联接的中间表"+intersectionTable);
 						realLeftTable=tableLeft;
 						break;
 					}
 				}
 				if(realLeftTable==null){
-					logger.warn("也没有找到能和"+tableTwo+"联接的中间表");
+					logger.info("也没有找到能和"+tableTwo+"联接的中间表");
 					return "";
 				}
 			}
@@ -340,7 +340,7 @@ public class TablesRelationPropertyService{
 				target=matcher.group();
 			}
 			if(target==null){
-				logger.warn("没有找到能和"+tableOne+"和"+tableTwo+"的连接类型为 join、left join、right join");
+				logger.info("没有找到能和"+tableOne+"和"+tableTwo+"的连接类型为 join、left join、right join");
 				return "";
 			}else{
 				String tmp1=target.trim().substring(tableOne.length());

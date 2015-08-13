@@ -8,8 +8,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.monitor.FileAlterationListener;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -40,7 +40,7 @@ import com.dboper.search.util.MapUtil;
 @Service
 public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQueryFileChange,Bootstrap{
 	
-	private final Log logger = LogFactory.getLog(DBSearchService.class);
+	private final Logger logger=LoggerFactory.getLogger(DBSearchService.class);
 
 	@Autowired
 	private Configuration config;
@@ -139,9 +139,10 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 		}
 		long sqlParseStartTime=System.currentTimeMillis();
 		String sql=sqlService.getSql(q);
+		logger.info("查询构建的sql为:{}",sql);
 		if(StringUtils.hasLength(sql)){
 			long sqlSatrtTime=System.currentTimeMillis();
-			logger.warn("解析成sql花费了:"+(sqlSatrtTime-sqlParseStartTime)+" ms");
+			logger.info("解析成sql花费了:{} ms",sqlSatrtTime-sqlParseStartTime);
 			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql);
 			String unionTablesPath=q.getUnionTablesPath();
 			if(StringUtils.hasLength(unionTablesPath)){
@@ -157,7 +158,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 				unionQ.setParams(q.getUnionParams());
 				String unionSql=sqlService.getSql(unionQ);
 				if(StringUtils.hasLength(unionSql)){
-					logger.warn("使用了联合查询");
+					logger.info("使用了联合查询");
 					data.addAll(config.getJdbcTemplate().queryForList(unionSql));
 				}
 			}
@@ -168,7 +169,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 				}
 			}
 			long sqlEndTime=System.currentTimeMillis();
-			logger.warn("sql查询花费了:"+(sqlEndTime-sqlSatrtTime)+" ms");
+			logger.info("sql查询花费了:{} ms",sqlEndTime-sqlSatrtTime);
 			return data;
 		}else{
 			return new ArrayList<Map<String,Object>>();
@@ -219,7 +220,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 			}
 		}
 		long endTime=System.currentTimeMillis();
-		logger.warn("复杂查询总共花费时间为："+(endTime-startTime)+" ms");
+		logger.info("复杂查询总共花费时间为："+(endTime-startTime)+" ms");
 		return firstDatas;
 	}
 	
