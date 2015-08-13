@@ -37,6 +37,8 @@ public class QueryBody implements Cloneable{
 	private Map<String,SonSearchBody> sonSearchs=new HashMap<String,SonSearchBody>();
 	private List<String> order_by=new ArrayList<String>();
 	
+	private Map<String,Map<String,Object>> sonParams=new HashMap<String,Map<String,Object>>();
+	
 	//传输数据用，不用于查询配置
 	private boolean hasSon=false;
 	private String fatherEntity;
@@ -50,6 +52,14 @@ public class QueryBody implements Cloneable{
 		return (QueryBody)super.clone();
 	}
 	
+	public Map<String, Map<String, Object>> getSonParams() {
+		return sonParams;
+	}
+
+	public void setSonParams(Map<String, Map<String, Object>> sonParams) {
+		this.sonParams = sonParams;
+	}
+
 	public Map<String, SonSearchBody> getSonSearchs() {
 		return sonSearchs;
 	}
