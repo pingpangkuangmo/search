@@ -564,4 +564,12 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 		this.config = config;
 	}
 
+	public ConcurrentHashMap<String, QueryBody> getQuerys() {
+		return querys;
+	}
+
+	public ConcurrentHashMap<String, ComplexQueryBody> getComplexQuerys() {
+		return complexQuerys;
+	}
+	
 }

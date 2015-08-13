@@ -171,7 +171,7 @@ public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 		Map<String,ColumnsFormatBody> columnsInfo=initColumnsInfo(containsFormFormatters);
 		List<String> fatherColumns=columnsInfo.get(FATHER).getObjColumns(FATHER_OBJ);
 		for(String column:columns){
-			if(column.contains("as")){
+			if(column.contains(" as ")){
 				String tmp=column.substring(column.indexOf(" as ")+4).trim();
 				//去掉as 别名时添加的 ``
 				if(tmp.startsWith("`") && tmp.endsWith("`")){
