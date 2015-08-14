@@ -39,11 +39,21 @@ public class ListFormFormatter implements FormFormatter{
 				Map<String,Object> obj=(Map<String, Object>)fatherTotal.get(objName);
 				String[] parts=objName.split("\\.");
 				if(parts.length==1){
-					List<Map<String,Object>> objs=new ArrayList<Map<String,Object>>();
-					if(!MapUtil.mapValueEmpty(obj)){
-						objs.add(obj);
+					Map<String,String> baseLists=q.getBaseLists();
+					if(baseLists!=null && baseLists.containsKey(objName)){
+						List<Object> objs=new ArrayList<Object>();
+						Object keyValue=obj.get(baseLists.get(objName));
+						if(keyValue!=null){
+							objs.add(keyValue);
+							fatherTotal.put(objName,objs);
+						}
+					}else{
+						List<Map<String,Object>> objs=new ArrayList<Map<String,Object>>();
+						if(!MapUtil.mapValueEmpty(obj)){
+							objs.add(obj);
+						}
+						fatherTotal.put(objName,objs);
 					}
-					fatherTotal.put(objName,objs);
 				}else if(parts.length>1){
 					MapUtil.addMapsonToList(fatherTotal,objName,parts,obj,q.getBaseLists());
 				}
@@ -64,28 +74,37 @@ public class ListFormFormatter implements FormFormatter{
 				int len=parts.length;
 				Map<String,Object> obj=(Map<String, Object>)fatherTotal.get(objName);
 				if(len==1){
-					List<Map<String,Object>> objs=null;
-					Object oldObjs=equalsFather.get(objName);
-					if(oldObjs==null){
-						objs=new ArrayList<Map<String,Object>>();
-						equalsFather.put(objName,objs);
-					}else if(oldObjs instanceof Map){
-						objs=new ArrayList<Map<String,Object>>();
-						objs.add((Map<String, Object>) oldObjs);
-						equalsFather.put(objName,objs);
-					}else if(oldObjs instanceof List){
-						objs=(List<Map<String, Object>>) oldObjs;
-					}
-					boolean exitsSonItem=false;
-					for(Map<String,Object> objItem:objs){
-						if(MapUtil.compareMapEquals(objItem,obj)){
-							exitsSonItem=true;
-							break;
+					Map<String,String> baseLists=q.getBaseLists();
+					if(baseLists!=null && baseLists.containsKey(objName)){
+						List<Object> objs=(List<Object>)equalsFather.get(objName);
+						Object keyValue=obj.get(baseLists.get(objName));
+						if(keyValue!=null && !objs.contains(keyValue)){
+							objs.add(keyValue);
 						}
-					}
-					if(!exitsSonItem){
-						if(!MapUtil.mapValueEmpty(obj)){
-							objs.add(obj);
+					}else{
+						List<Map<String,Object>> objs=null;
+						Object oldObjs=equalsFather.get(objName);
+						if(oldObjs==null){
+							objs=new ArrayList<Map<String,Object>>();
+							equalsFather.put(objName,objs);
+						}else if(oldObjs instanceof Map){
+							objs=new ArrayList<Map<String,Object>>();
+							objs.add((Map<String, Object>) oldObjs);
+							equalsFather.put(objName,objs);
+						}else if(oldObjs instanceof List){
+							objs=(List<Map<String, Object>>) oldObjs;
+						}
+						boolean exitsSonItem=false;
+						for(Map<String,Object> objItem:objs){
+							if(MapUtil.compareMapEquals(objItem,obj)){
+								exitsSonItem=true;
+								break;
+							}
+						}
+						if(!exitsSonItem){
+							if(!MapUtil.mapValueEmpty(obj)){
+								objs.add(obj);
+							}
 						}
 					}
 				}else if(len==2){
