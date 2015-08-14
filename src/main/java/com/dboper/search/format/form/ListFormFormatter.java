@@ -40,7 +40,7 @@ public class ListFormFormatter implements FormFormatter{
 				String[] parts=objName.split("\\.");
 				if(parts.length==1){
 					Map<String,String> baseLists=q.getBaseLists();
-					if(baseLists!=null && baseLists.containsKey(objName)){
+					if(baseLists!=null && obj!=null && baseLists.containsKey(objName)){
 						List<Object> objs=new ArrayList<Object>();
 						Object keyValue=obj.get(baseLists.get(objName));
 						if(keyValue!=null){
@@ -75,7 +75,7 @@ public class ListFormFormatter implements FormFormatter{
 				Map<String,Object> obj=(Map<String, Object>)fatherTotal.get(objName);
 				if(len==1){
 					Map<String,String> baseLists=q.getBaseLists();
-					if(baseLists!=null && baseLists.containsKey(objName)){
+					if(baseLists!=null && obj!=null && baseLists.containsKey(objName)){
 						List<Object> objs=(List<Object>)equalsFather.get(objName);
 						Object keyValue=obj.get(baseLists.get(objName));
 						if(keyValue!=null && !objs.contains(keyValue)){

@@ -17,6 +17,7 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.dboper.search.config.Configuration;
 import com.dboper.search.domain.ComplexQueryBody;
@@ -396,10 +397,11 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 		if(complexQueryBody==null){
 			return new ArrayList<Map<String,Object>>();
 		}
+		ComplexQueryBody copy=JSON.parseObject(JSON.toJSONString(complexQueryBody),ComplexQueryBody.class);
 		if(params!=null){
-			complexQueryBody.getParams().putAll(params);
+			copy.getParams().putAll(params);
 		}
-		return selectComplex(complexQueryBody);
+		return selectComplex(copy);
 	}
 	
 	
