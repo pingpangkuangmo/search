@@ -14,6 +14,7 @@ import com.dboper.search.config.Configuration;
 import com.dboper.search.domain.QueryBody;
 import com.dboper.search.relation.TablesRelationServiceCache;
 import com.dboper.search.sqlparams.DefaultSqlParamsHandler;
+import com.dboper.search.sqlparams.DefaultSqlParamsHandlerUtils;
 import com.dboper.search.sqlparams.SqlParamsParseResult;
 import com.dboper.search.sqlparams.parser.SqlParamsParser;
 import com.dboper.search.sqlparams.util.StringUtils;
@@ -50,6 +51,7 @@ public class SqlService implements Bootstrap{
 		if(customerSqlParamsHandlers!=null){
 			defaultSqlParamsHandler.registerSqlParamsHandler(customerSqlParamsHandlers);
 		}
+		DefaultSqlParamsHandlerUtils.defaultSqlParamsHandler=defaultSqlParamsHandler;
 	}
 	
 	public SqlParamsParseResult getSqlParamsResult(QueryBody q){
@@ -136,16 +138,18 @@ public class SqlService implements Bootstrap{
 				}
 			}
 		}
-		Map<String,Map<String,Object>> sonParams=q.getSonParams();
-		if(sonParams==null){
-			sonParams=new HashMap<String,Map<String,Object>>();
-			q.setSonParams(sonParams);
-		}
-		for(String sonKey:sonKeys){
-			String son=sonKey.substring(SON_SEARCH_FLAG.length());
-			Object sonParam=params.remove(sonKey);
-			if(sonParam instanceof Map){
-				sonParams.put(son,(Map<String, Object>) sonParam);
+		if(sonKeys.size()>0){
+			Map<String,Map<String,Object>> sonParams=q.getSonParams();
+			if(sonParams==null){
+				sonParams=new HashMap<String,Map<String,Object>>();
+				q.setSonParams(sonParams);
+			}
+			for(String sonKey:sonKeys){
+				String son=sonKey.substring(SON_SEARCH_FLAG.length());
+				Object sonParam=params.remove(sonKey);
+				if(sonParam instanceof Map){
+					sonParams.put(son,(Map<String, Object>) sonParam);
+				}
 			}
 		}
 	}

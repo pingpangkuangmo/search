@@ -20,12 +20,12 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.util.StringUtils;
 
-import com.dboper.search.SqlService;
 import com.dboper.search.cache.EntityNameCache;
 import com.dboper.search.cache.EntityNameContext;
 import com.dboper.search.config.BaseTwoTablesRelationConfig;
 import com.dboper.search.domain.QueryBody;
 import com.dboper.search.domain.SonSearchBody;
+import com.dboper.search.sqlparams.DefaultSqlParamsHandlerUtils;
 import com.dboper.search.table.TableColumnsModule;
 import com.dboper.search.util.FileUtil;
 import com.dboper.search.util.ListToStringUtil;
@@ -285,15 +285,30 @@ public class TablesRelationPropertyService{
 				realTableRight=tableTwo.substring(SON_SEARCH_PREFIX.length(),tableTwo.length()-SON_SEARCH_SUBFIX.length());
 				SonSearchBody realTableRightSonSearchBody=q.getSonSearchs().get(realTableRight);
 				if(realTableRightSonSearchBody==null){
-					logger.warn("找不到 "+realTableRight+" 的sonSearchs定义");
-					throw new RuntimeException("参数格式不合法");
+					logger.warn("找不到 "+realTableRight+" 的sonSearchs定义，自定义一个");
+					realTableRightSonSearchBody=new SonSearchBody();
 				}
 				String sql=converterSql(realTableRightSonSearchBody.getSql());
-				String sonRelation=realTableRightSonSearchBody.getRelation();
-				if(sonRelation!=null){
-					sb.append(" ").append(sql).append("").append("").append(sonRelation);
-					continue;
+				if(sql==null){
+					sb.append(" (select * from ").append(config.getTablePrefix()).append(realTableRight);
+					Map<String,Object> params=new HashMap<String,Object>();
+					params.putAll(realTableRightSonSearchBody.getParams());
+					params.putAll(q.getSonParams().get(realTableRight));
+					if(params.size()>0){
+						String sqlParams=DefaultSqlParamsHandlerUtils.defaultSqlParamsHandler.getSqlWhereParams(params);
+						sb.append(" where ").append(sqlParams).append(") ").append(realTableRight);
+						String sonRelation=realTableRightSonSearchBody.getRelation();
+						if(sonRelation!=null){
+							sb.append(" ").append(sonRelation).append(" ");
+							continue;
+						}else{
+							
+						}
+					}
+				}else{
+					
 				}
+				
 				
 				
 			}
@@ -329,22 +344,9 @@ public class TablesRelationPropertyService{
 				}
 			}
 			
-			//当有多个重复表出现的时候，就出bug了
-			String prefix=i==0?"":" ";
-			String sub=i==len-2?"":" ";
-			Pattern pattern=Pattern.compile(prefix+tableOne+"\\s+(left join)?(right join)?(join)?\\s+"+tableTwo+sub);
-			Matcher matcher=pattern.matcher(joinStr);
-			String target=null;
-			String joinType=null;
-			if(matcher.find()){
-				target=matcher.group();
-			}
-			if(target==null){
-				logger.info("没有找到能和"+tableOne+"和"+tableTwo+"的连接类型为 join、left join、right join");
+			String joinType=getJoinType(i, len, tableOne, tableTwo,joinStr);
+			if(!StringUtils.hasLength(joinType)){
 				return "";
-			}else{
-				String tmp1=target.trim().substring(tableOne.length());
-				joinType=tmp1.substring(0,tmp1.indexOf(tableTwo)).trim();
 			}
 			if(intersectionTable!=null){
 				//中间表的级联
@@ -363,7 +365,30 @@ public class TablesRelationPropertyService{
 		return fullRelation;
 	}
 	
+	private String getJoinType(int i,int len,String left,String right,String tablesPath){
+		String prefix=i==0?"":" ";
+		String sub=i==len-2?"":" ";
+		Pattern pattern=Pattern.compile(prefix+left+"\\s+(left join)?(right join)?(join)?\\s+"+right+sub);
+		Matcher matcher=pattern.matcher(tablesPath);
+		String target=null;
+		String joinType=null;
+		if(matcher.find()){
+			target=matcher.group();
+		}
+		if(target==null){
+			logger.warn("没有找到能和"+left+"和"+right+"的连接类型为 join、left join、right join");
+			return "";
+		}else{
+			String tmp1=target.trim().substring(left.length());
+			joinType=tmp1.substring(0,tmp1.indexOf(right)).trim();
+		}
+		return joinType;
+	}
+	
 	private String converterSql(String sql){
+		if(sql==null){
+			return null;
+		}
 		return sql.replaceAll("%tprefix%","cms_");
 	}
 
