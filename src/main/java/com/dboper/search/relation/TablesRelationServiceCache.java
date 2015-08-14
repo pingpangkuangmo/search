@@ -81,10 +81,10 @@ public class TablesRelationServiceCache implements Bootstrap{
 			relation=this.tablesRelationPropertyService.getRelation(q,tableColumnsModule);
 		}
 		if(StringUtils.hasLength(relation)){
-			logger.warn("使用了tablesPath来寻找表之间的连接关系："+relation);
+			logger.info("使用了tablesPath来寻找表之间的连接关系："+relation);
 			return relation;
 		}
-		logger.warn("tablesPath没有找到连接关系，使用了columns和params字段来推断表之间的连接关系");
+		logger.info("tablesPath没有找到连接关系，使用了columns和params字段来推断表之间的连接关系");
 		tableColumnsModule.processQueryBodyTableCoumns(q,null);
 		List<String> tables=new ArrayList<String>();
 		for(String column:q.getColumns()){

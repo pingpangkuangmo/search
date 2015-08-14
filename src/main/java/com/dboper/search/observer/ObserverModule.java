@@ -37,7 +37,7 @@ public class ObserverModule{
 					FileAlterationMonitor monitor=new FileAlterationMonitor(observerItem.getInterval(),observer);
 					monitors.put(observerItemName,monitor);
 					monitor.start();
-					logger.warn("对于"+observerItemName+"初始化监控完成");
+					logger.info("对于"+observerItemName+"初始化监控完成");
 				}else{
 					logger.warn("对于"+observerItemName+"初始化监控时没有找到相应的资源文件");
 				}

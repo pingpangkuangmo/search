@@ -141,7 +141,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 		String sql=sqlService.getSql(q);
 		if(StringUtils.hasLength(sql)){
 			long sqlSatrtTime=System.currentTimeMillis();
-			logger.warn("解析成sql花费了:"+(sqlSatrtTime-sqlParseStartTime)+" ms");
+			logger.info("解析成sql花费了:"+(sqlSatrtTime-sqlParseStartTime)+" ms");
 			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql);
 			String unionTablesPath=q.getUnionTablesPath();
 			if(StringUtils.hasLength(unionTablesPath)){
@@ -157,7 +157,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 				unionQ.setParams(q.getUnionParams());
 				String unionSql=sqlService.getSql(unionQ);
 				if(StringUtils.hasLength(unionSql)){
-					logger.warn("使用了联合查询");
+					logger.info("使用了联合查询");
 					data.addAll(config.getJdbcTemplate().queryForList(unionSql));
 				}
 			}
@@ -168,7 +168,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 				}
 			}
 			long sqlEndTime=System.currentTimeMillis();
-			logger.warn("sql查询花费了:"+(sqlEndTime-sqlSatrtTime)+" ms");
+			logger.info("sql查询花费了:"+(sqlEndTime-sqlSatrtTime)+" ms");
 			return data;
 		}else{
 			return new ArrayList<Map<String,Object>>();
@@ -219,7 +219,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 			}
 		}
 		long endTime=System.currentTimeMillis();
-		logger.warn("复杂查询总共花费时间为："+(endTime-startTime)+" ms");
+		logger.info("复杂查询总共花费时间为："+(endTime-startTime)+" ms");
 		return firstDatas;
 	}
 	
