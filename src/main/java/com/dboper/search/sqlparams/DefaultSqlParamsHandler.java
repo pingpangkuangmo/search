@@ -76,9 +76,9 @@ public class DefaultSqlParamsHandler {
 				if(value instanceof Map){
 					//这里需要进行递归处理嵌套的查询条件
 					SqlParamsParseResult SqlParamsParseResultModel=null;
-					if(key.equals(andKey)){
+					if(key.startsWith(andKey)){
 						SqlParamsParseResultModel=processModelSqlWhereParams((Map<String,Object>)value,AND,isPlaceHolder);
-					}else if(key.equals(orKey)){
+					}else if(key.startsWith(orKey)){
 						SqlParamsParseResultModel=processModelSqlWhereParams((Map<String,Object>)value,OR,isPlaceHolder);
 					}
 					if(SqlParamsParseResultModel!=null && StringUtils.isNotEmpty(SqlParamsParseResultModel.getBaseWhereSql())){
