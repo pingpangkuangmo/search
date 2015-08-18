@@ -138,10 +138,13 @@ public class SqlService implements Bootstrap{
 
 	@SuppressWarnings("unchecked")
 	private String processAndOr(String item, Map<String, Object> params) {
-		String andOr=""; 
-		if("$and".equals(item)){
+		String andOr="";
+		if(item==null){
+			return "";
+		}
+		if(item.startsWith("$and")){
 			andOr="and";
-		}else if("$or".equals(item)){
+		}else if(item.startsWith("$or")){
 			andOr="or";
 		}
 		if(StringUtils.hasLength(andOr)){
