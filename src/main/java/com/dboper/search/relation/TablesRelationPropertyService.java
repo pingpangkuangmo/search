@@ -68,6 +68,8 @@ public class TablesRelationPropertyService{
 	
 	private static final String SON_SEARCH_SUBFIX="}";
 	
+	private static final String PARAMS_PART="%params%";
+	
 	public TablesRelationPropertyService(BaseTwoTablesRelationConfig config){
 		this.config=config;
 	}
@@ -265,104 +267,167 @@ public class TablesRelationPropertyService{
 			return "";
 		}
 		StringBuilder sb=new StringBuilder();
-		String firstTable=config.getTablePrefix()+tables[0];
+		String firstTable=config.getTablePrefix()+tables[0].trim();
 		sb.append(firstTable);
 		allTables.add(firstTable);
 		List<String> list=new ArrayList<String>();
-		addSonTables(tables[0], joinStr, sb, allTables,joinStrChangeTables);
+		addSonTables(tables[0].trim(), joinStr, sb, allTables,joinStrChangeTables);
 		for(int i=0,len=tables.length;i<len-1;i++){
 			String tableOne=tables[i].trim();
 			String tableTwo=tables[i+1].trim();
-			String realLeftTable=null;
 			String realTableRight=tableTwo;
-			String relation=null;
-			String intersectionTable=null;
+			
 			if(tableTwo.startsWith(SON_SEARCH_PREFIX) && tableTwo.endsWith(SON_SEARCH_SUBFIX)){
-				if(tableTwo.length()==(SON_SEARCH_PREFIX.length()+SON_SEARCH_SUBFIX.length())){
-					logger.warn(SON_SEARCH_PREFIX+SON_SEARCH_SUBFIX+" 里面的内容为空");
-					throw new RuntimeException("参数格式不合法");
-				}
-				realTableRight=tableTwo.substring(SON_SEARCH_PREFIX.length(),tableTwo.length()-SON_SEARCH_SUBFIX.length());
-				SonSearchBody realTableRightSonSearchBody=q.getSonSearchs().get(realTableRight);
-				if(realTableRightSonSearchBody==null){
-					logger.warn("找不到 "+realTableRight+" 的sonSearchs定义，自定义一个");
-					realTableRightSonSearchBody=new SonSearchBody();
-				}
-				String sql=converterSql(realTableRightSonSearchBody.getSql());
-				if(sql==null){
-					sb.append(" (select * from ").append(config.getTablePrefix()).append(realTableRight);
-					Map<String,Object> params=new HashMap<String,Object>();
-					params.putAll(realTableRightSonSearchBody.getParams());
-					params.putAll(q.getSonParams().get(realTableRight));
-					if(params.size()>0){
-						String sqlParams=DefaultSqlParamsHandlerUtils.defaultSqlParamsHandler.getSqlWhereParams(params);
-						sb.append(" where ").append(sqlParams).append(") ").append(realTableRight);
-						String sonRelation=realTableRightSonSearchBody.getRelation();
-						if(sonRelation!=null){
-							sb.append(" ").append(sonRelation).append(" ");
-							continue;
-						}else{
-							
-						}
-					}
-				}else{
-					
-				}
-				
-				
-				
-			}
-			for(int j=i;j>=0;j--){
-				String tableLeft=tables[j].trim();
-				String otherTablesStr=getSortStr(tableTwo,tableLeft,list);
-				relation=baseTwoTablesRelation.get(otherTablesStr);
-				if(relation!=null){
-					realLeftTable=tableLeft;
-					break;
-				}
-			}
-			//如果都没找到能和左边相联接的表，则尝试获取他们的公共表
-			if(relation==null){
-				for(int j=i;j>=0;j--){
-					String tableLeft=tables[j].trim();
-					//用于处理中间表，扩展一级 organization 和 product_line都含有organization_product_lines表，所以自动把中间表加入进来
-					//需要提前准备这样的数据，只处理一层中间表，不再处理复杂的多级
-					List<String> tableTwoRelationTables=tableConfigAndRelationtables.get(tableTwo);
-					List<String> realLeftRelationTables=tableConfigAndRelationtables.get(tableLeft);
-					List<String> intersection=ListUtil.intersection(tableTwoRelationTables,realLeftRelationTables);
-					if(intersection.size()>0){
-						//表示他们之间有中间表，选取中间表中的一个（中间表可能有很多，这一点也会产生很多问题，但可以通过配置解决）
-						intersectionTable=intersection.get(0);
-						logger.info("找到能和"+tableTwo+"联接的中间表"+intersectionTable);
-						realLeftTable=tableLeft;
-						break;
-					}
-				}
-				if(realLeftTable==null){
-					logger.info("也没有找到能和"+tableTwo+"联接的中间表");
+				if(!processSonSearch(q,i,tables,list, tableOne, tableTwo, joinStr, sb,
+						allTables, len, joinStrChangeTables)){
 					return "";
 				}
+				continue;
 			}
 			
-			String joinType=getJoinType(i, len, tableOne, tableTwo,joinStr);
-			if(!StringUtils.hasLength(joinType)){
+			if(!getRealTableRightRelation(realTableRight, i, tables, list, tableOne, tableTwo, joinStr, sb,
+					allTables, len, joinStrChangeTables)){
 				return "";
 			}
-			if(intersectionTable!=null){
-				//中间表的级联
-				String relationOne=baseTwoTablesRelation.get(getSortStr(intersectionTable,realLeftTable,list));
-				appendRelation(joinStr,sb, intersectionTable, realLeftTable, relationOne, joinType,allTables,joinStrChangeTables);
-				String relationTwo=baseTwoTablesRelation.get(getSortStr(tableTwo,intersectionTable,list));
-				appendRelation(joinStr,sb, tableTwo, intersectionTable, relationTwo, joinType,allTables,joinStrChangeTables);
-			}else{
-				appendRelation(joinStr,sb, tableTwo, realLeftTable, relation, joinType,allTables,joinStrChangeTables);
-			}
-			addSonTables(tableTwo, joinStr, sb, allTables, joinStrChangeTables);
 		}
 		tableColumnsModule.processQueryBodyTableCoumns(q,joinStrChangeTables.get(joinStr));
 		String fullRelation=sb.toString();
 		tablesRelationParseResult.put(joinStr,fullRelation);
 		return fullRelation;
+	}
+	
+	private boolean getRealTableRightRelation(String realTableRight,int i,String[] tables,List<String> list,
+			String tableOne,String tableTwo,String joinStr,StringBuilder sb,List<String> allTables,
+			int len,HashMap<String,Map<String,Map<String,String>>> joinStrChangeTables){
+		String relation=null;
+		String realLeftTable=null;
+		String intersectionTable=null;
+		for(int j=i;j>=0;j--){
+			String tableLeft=tables[j].trim();
+			String otherTablesStr=getSortStr(realTableRight,tableLeft,list);
+			relation=baseTwoTablesRelation.get(otherTablesStr);
+			if(relation!=null){
+				realLeftTable=tableLeft;
+				break;
+			}
+		}
+		//如果都没找到能和左边相联接的表，则尝试获取他们的公共表
+		if(relation==null){
+			for(int j=i;j>=0;j--){
+				String tableLeft=tables[j].trim();
+				//用于处理中间表，扩展一级 organization 和 product_line都含有organization_product_lines表，所以自动把中间表加入进来
+				//需要提前准备这样的数据，只处理一层中间表，不再处理复杂的多级
+				List<String> tableTwoRelationTables=tableConfigAndRelationtables.get(realTableRight);
+				List<String> realLeftRelationTables=tableConfigAndRelationtables.get(tableLeft);
+				List<String> intersection=ListUtil.intersection(tableTwoRelationTables,realLeftRelationTables);
+				if(intersection.size()>0){
+					//表示他们之间有中间表，选取中间表中的一个（中间表可能有很多，这一点也会产生很多问题，但可以通过配置解决）
+					intersectionTable=intersection.get(0);
+					logger.info("找到能和"+realTableRight+"联接的中间表"+intersectionTable);
+					realLeftTable=tableLeft;
+					break;
+				}
+			}
+			if(realLeftTable==null){
+				logger.info("也没有找到能和"+realTableRight+"联接的中间表");
+				return false;
+			}
+		}
+		String joinType=getJoinType(i, len, tableOne, tableTwo,joinStr);
+		if(!StringUtils.hasLength(joinType)){
+			return false;
+		}
+		if(intersectionTable!=null){
+			//中间表的级联
+			String relationOne=baseTwoTablesRelation.get(getSortStr(intersectionTable,realLeftTable,list));
+			appendRelation(joinStr,sb, intersectionTable, realLeftTable, relationOne, joinType,allTables,joinStrChangeTables);
+			String relationTwo=baseTwoTablesRelation.get(getSortStr(realTableRight,intersectionTable,list));
+			appendRelation(joinStr,sb, realTableRight, intersectionTable, relationTwo, joinType,allTables,joinStrChangeTables);
+		}else{
+			appendRelation(joinStr,sb, realTableRight, realLeftTable, relation, joinType,allTables,joinStrChangeTables);
+		}
+		addSonTables(realTableRight, joinStr, sb, allTables, joinStrChangeTables);
+		return true;
+	}
+	
+	private boolean processSonSearch(QueryBody q,
+			int i,String[] tables,List<String> list,
+			String tableOne,String tableTwo,String joinStr,StringBuilder sb,List<String> allTables,
+			int len,HashMap<String,Map<String,Map<String,String>>> joinStrChangeTables){
+		if(tableTwo.length()==(SON_SEARCH_PREFIX.length()+SON_SEARCH_SUBFIX.length())){
+			logger.warn(SON_SEARCH_PREFIX+SON_SEARCH_SUBFIX+" 里面的内容为空");
+			throw new RuntimeException("参数格式不合法");
+		}
+		String realTableRight=tableTwo.substring(SON_SEARCH_PREFIX.length(),tableTwo.length()-SON_SEARCH_SUBFIX.length());
+		SonSearchBody realTableRightSonSearchBody=q.getSonSearchs().get(realTableRight);
+		if(realTableRightSonSearchBody==null){
+			logger.warn("找不到 "+realTableRight+" 的sonSearchs定义，自定义一个");
+			realTableRightSonSearchBody=new SonSearchBody();
+		}
+		String sql=converterSql(realTableRightSonSearchBody.getSql());
+		Map<String,Object> params=new HashMap<String,Object>();
+		params.putAll(realTableRightSonSearchBody.getParams());
+		params.putAll(q.getSonParams().get(realTableRight));
+		int paramsLen=params.size();
+		String joinType=getJoinType(i, len, tableOne, tableTwo,joinStr);
+		if(!StringUtils.hasLength(joinType)){
+			return false;
+		}
+		if(sql==null){
+			sb.append(" ").append(joinType);
+			sb.append(" (select * from ").append(config.getTablePrefix()).append(realTableRight);
+			if(params.size()>0){
+				String sqlParams=DefaultSqlParamsHandlerUtils.defaultSqlParamsHandler.getSqlWhereParams(params);
+				sb.append(" where ").append(sqlParams).append(") ").append(realTableRight);
+				String sonRelation=realTableRightSonSearchBody.getRelation();
+				if(sonRelation!=null){
+					sb.append(" ").append(sonRelation).append(" ");
+				}else{
+					//寻找realTableRight与前面的table的连接关系
+					StringBuilder partSb=new StringBuilder();
+					//这一块还要改造，默认会  left join realTableRight也加上的，目前整体的realTableRight是一个子查询，需要替换的
+					return getRealTableRightRelation(realTableRight, i, tables, list, tableOne, tableTwo,
+							joinStr, partSb, allTables, len, joinStrChangeTables);
+				}
+			}
+		}else{
+			boolean hasWhere=sql.contains(" where ");
+			if(hasWhere){
+				String[] paramsParts=sql.split(PARAMS_PART);
+				if(paramsParts.length==3 && paramsLen>0){
+					String sqlParams=DefaultSqlParamsHandlerUtils.defaultSqlParamsHandler.getSqlWhereParams(params);
+					if(sqlParams!=null && sqlParams.length()>0){
+						sb.append(" ").append(paramsParts[0]);
+						sb.append(" ").append(paramsParts[1]).append(" and ").append(sqlParams)
+							.append(" ").append(paramsParts[2]);
+					}
+				}else{
+					sb.append(" ").append(sql);
+				}
+			}else{
+				if(paramsLen>0){
+					String[] paramsParts=sql.split(PARAMS_PART);
+					String sqlParams=DefaultSqlParamsHandlerUtils.defaultSqlParamsHandler.getSqlWhereParams(params);
+					if(sqlParams!=null && sqlParams.length()>0){
+						if(paramsParts.length==2){
+							sb.append(" ").append(paramsParts[0]);
+							sb.append(" where ").append(sqlParams)
+								.append(" ").append(paramsParts[1]);
+						}else if(paramsParts.length==3){
+							sb.append(" ").append(paramsParts[0]);
+							sb.append(" where ").append(sqlParams)
+								.append(" ").append(paramsParts[2]);
+						}
+					}else{
+						sb.append(" ").append(sql);
+					}
+				}else{
+					sb.append(" ").append(sql);
+				}
+			}
+			
+		}
+		return true;
 	}
 	
 	private String getJoinType(int i,int len,String left,String right,String tablesPath){
@@ -389,7 +454,7 @@ public class TablesRelationPropertyService{
 		if(sql==null){
 			return null;
 		}
-		return sql.replaceAll("%tprefix%","cms_");
+		return sql.replaceAll("%tprefix%",config.getTablePrefix());
 	}
 
 	//这一块需要单独独立出来，形成算法处理
