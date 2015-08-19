@@ -19,8 +19,8 @@ public class ListFormFormatter implements FormFormatter{
 	public Map<String, Object> fromat(Map<String, Object> item,Map<String,Object> fatherTotal,
 			List<Map<String, Object>> data, ColumnsFormatBody columnsFormatBody, QueryBody q) {
 		List<String> groupColumns=q.getGroupColumns();
-		if(groupColumns==null || groupColumns.size()<1 || !q.getColumns().containsAll(groupColumns)){
-			//不支持list
+ 		if(groupColumns==null || groupColumns.size()<1 || !q.getColumns().containsAll(groupColumns)){
+			//不支持list 
 			return fatherTotal;
 		}
 		boolean fatherExits=false;

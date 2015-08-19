@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,7 +29,6 @@ import com.dboper.search.domain.SonSearchBody;
 import com.dboper.search.sqlparams.DefaultSqlParamsHandlerUtils;
 import com.dboper.search.table.TableColumnsModule;
 import com.dboper.search.util.FileUtil;
-import com.dboper.search.util.ListToStringUtil;
 import com.dboper.search.util.ListUtil;
 
 public class TablesRelationPropertyService{
@@ -64,9 +64,7 @@ public class TablesRelationPropertyService{
 	
 	private static final String MANY_RELATION_FLAG="_as_";
 	
-	private static final String SON_SEARCH_PREFIX="sonSearch{";
-	
-	private static final String SON_SEARCH_SUBFIX="}";
+	private static final String SON_SEARCH_PREFIX="sonSearch__";
 	
 	private static final String PARAMS_PART="%params%";
 	
@@ -169,7 +167,7 @@ public class TablesRelationPropertyService{
 	}
 	
 	public String getRelation(QueryBody q,TableColumnsModule tableColumnsModule){
-		String cachekey=getEntityNames(q,tableColumnsModule);
+		String cachekey=getCachekey(q,tableColumnsModule);
 		logger.info("拿到entityNames的cacheKey为="+cachekey);
 		Map<String,EntityNameContext> entityNamesData=entityNameCache.get(cachekey);
 		if(entityNamesData==null){
@@ -221,17 +219,43 @@ public class TablesRelationPropertyService{
 		entityNameCache.put(cachekey,currentData);
 	}
 
-	private String getEntityNames(QueryBody q,TableColumnsModule tableColumnsModule) {
+	private String getCachekey(QueryBody q,TableColumnsModule tableColumnsModule) {
+		StringBuilder sb=new StringBuilder();
+		sb.append(q.getAction());
 		List<String> entities=tableColumnsModule.getFullEntity(q);
-		if(entities==null || entities.size()<0){
-			return "";
-		}else{
-			if(entities.size()==0){
-				return System.currentTimeMillis()+"_no_cache";
-			}
-			Collections.sort(entities);
-			return ListToStringUtil.arrayToString(entities,"__")+q.getTablesPath()+q.getUnionTablesPath()+q.getSonSearchs();
+		if(entities!=null && entities.size()==0){
+			return System.currentTimeMillis()+"_no_cache";
 		}
+		sb.append(getMapKeyString(q.getParams()));
+		Map<String,Map<String,Object>> sonParams=q.getSonParams();
+		if(sonParams!=null && sonParams.size()>0){
+			List<String> keys=new ArrayList<String>(sonParams.keySet());
+			Collections.sort(keys);
+			for(String key:keys){
+				sb.append(key);
+				sb.append(getMapKeyString(sonParams.get(key)));
+			}
+		}
+		return sb.toString();
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private String getMapKeyString(Map params){
+		if(params==null || params.size()==0){
+			return "{}";
+		}
+		StringBuilder sb=new StringBuilder();
+		Set<String> keys=params.keySet();
+		List<String> listKeys=new ArrayList<String>(keys);
+		Collections.sort(listKeys);
+		for(String key:listKeys){
+			sb.append(key);
+			Object value=params.get(key);
+			if(value!=null && value instanceof Map){
+				sb.append(getMapKeyString((Map)value));
+			}
+		}
+		return sb.toString();
 	}
 
 	//需要优化下，对于只有一个entity时的查询（relation很简单，就是entity表名，然后就是处理附属表）
@@ -277,7 +301,7 @@ public class TablesRelationPropertyService{
 			String tableTwo=tables[i+1].trim();
 			String realTableRight=tableTwo;
 			
-			if(tableTwo.startsWith(SON_SEARCH_PREFIX) && tableTwo.endsWith(SON_SEARCH_SUBFIX)){
+			if(tableTwo.startsWith(SON_SEARCH_PREFIX)){
 				if(!processSonSearch(q,i,tables,list, tableOne, tableTwo, joinStr, sb,
 						allTables, len, joinStrChangeTables)){
 					return "";
@@ -354,11 +378,11 @@ public class TablesRelationPropertyService{
 			int i,String[] tables,List<String> list,
 			String tableOne,String tableTwo,String joinStr,StringBuilder sb,List<String> allTables,
 			int len,HashMap<String,Map<String,Map<String,String>>> joinStrChangeTables){
-		if(tableTwo.length()==(SON_SEARCH_PREFIX.length()+SON_SEARCH_SUBFIX.length())){
-			logger.warn(SON_SEARCH_PREFIX+SON_SEARCH_SUBFIX+" 里面的内容为空");
+		if(tableTwo.length()==(SON_SEARCH_PREFIX.length())){
+			logger.warn(SON_SEARCH_PREFIX+" 里面的内容为空");
 			throw new RuntimeException("参数格式不合法");
 		}
-		String realTableRight=tableTwo.substring(SON_SEARCH_PREFIX.length(),tableTwo.length()-SON_SEARCH_SUBFIX.length());
+		String realTableRight=tableTwo.substring(SON_SEARCH_PREFIX.length());
 		SonSearchBody realTableRightSonSearchBody=q.getSonSearchs().get(realTableRight);
 		if(realTableRightSonSearchBody==null){
 			logger.warn("找不到 "+realTableRight+" 的sonSearchs定义，自定义一个");
@@ -367,28 +391,41 @@ public class TablesRelationPropertyService{
 		String sql=converterSql(realTableRightSonSearchBody.getSql());
 		Map<String,Object> params=new HashMap<String,Object>();
 		params.putAll(realTableRightSonSearchBody.getParams());
-		params.putAll(q.getSonParams().get(realTableRight));
+		Map<String,Map<String,Object>> sonParmas=q.getSonParams();
+		if(sonParmas!=null){
+			Map<String,Object> tableParams=sonParmas.get(realTableRight);
+			if(tableParams!=null){
+				params.putAll(tableParams);
+			}
+		}
 		int paramsLen=params.size();
 		String joinType=getJoinType(i, len, tableOne, tableTwo,joinStr);
 		if(!StringUtils.hasLength(joinType)){
 			return false;
 		}
 		if(sql==null){
-			sb.append(" ").append(joinType);
-			sb.append(" (select * from ").append(config.getTablePrefix()).append(realTableRight);
-			if(params.size()>0){
+			StringBuilder sonSearchTable=new StringBuilder();
+			String realTableRightFull=config.getTablePrefix()+realTableRight;
+			sonSearchTable.append(" (select * from ").append(realTableRightFull);
+			if(paramsLen>0){
 				String sqlParams=DefaultSqlParamsHandlerUtils.defaultSqlParamsHandler.getSqlWhereParams(params);
-				sb.append(" where ").append(sqlParams).append(") ").append(realTableRight);
-				String sonRelation=realTableRightSonSearchBody.getRelation();
-				if(sonRelation!=null){
-					sb.append(" ").append(sonRelation).append(" ");
-				}else{
-					//寻找realTableRight与前面的table的连接关系
-					StringBuilder partSb=new StringBuilder();
-					//这一块还要改造，默认会  left join realTableRight也加上的，目前整体的realTableRight是一个子查询，需要替换的
-					return getRealTableRightRelation(realTableRight, i, tables, list, tableOne, tableTwo,
-							joinStr, partSb, allTables, len, joinStrChangeTables);
+				sonSearchTable.append(" where ").append(sqlParams);
+			}
+			sonSearchTable.append(" ) ").append(realTableRightFull);
+			String sonRelation=realTableRightSonSearchBody.getRelation();
+			if(sonRelation!=null){
+				sonSearchTable.append(" ").append(sonRelation).append(" ");
+				sb.append(" ").append(joinType).append(" ").append(sonSearchTable);
+			}else{
+				//寻找realTableRight与前面的table的连接关系
+				StringBuilder partSb=new StringBuilder();
+				//这一块还要改造，默认会  left join realTableRight也加上的，目前整体的realTableRight是一个子查询，需要替换的
+				if(!getRealTableRightRelation(realTableRight, i, tables, list, tableOne, tableTwo,
+						joinStr, partSb, allTables, len, joinStrChangeTables)){
+					return false;
 				}
+				String relation=partSb.toString();
+				sb.append(" ").append(relation.replaceFirst(realTableRightFull,sonSearchTable.toString()));
 			}
 		}else{
 			boolean hasWhere=sql.contains(" where ");

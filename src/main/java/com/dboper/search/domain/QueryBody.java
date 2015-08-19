@@ -196,8 +196,6 @@ public class QueryBody implements Cloneable{
 		this.action = action;
 	}
 
-
-
 	public void addColumns(String column){
 		this.columns.add(column);
 	}

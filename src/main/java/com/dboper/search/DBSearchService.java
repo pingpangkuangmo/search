@@ -479,6 +479,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 	public void processQueryBodyChange(Map<String, QueryBody> change,String fileName) {
 		logger.info("observ "+fileName+" changed");
 		if(change!=null){
+			initAction(change);
 			querys.putAll(change);
 		}
 	}
@@ -499,6 +500,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 			if(resources!=null){
 				for(Resource resource:resources){
 					Map<String,QueryBody> fileQueryBody=FileUtil.getQueryBodyFromFile(resource.getInputStream());
+					initAction(fileQueryBody);
 					querys.putAll(fileQueryBody);
 				}
 			}
@@ -512,6 +514,14 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+	}
+	
+	private void initAction(Map<String,QueryBody> change){
+		if(change!=null){
+			for(String action:change.keySet()){
+				change.get(action).setAction(action);
+			}
 		}
 	}
 	
