@@ -1,6 +1,7 @@
 package com.dboper.search.table;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +17,8 @@ public class TableColumnsModule {
 	
 	private static final List<String> flags;
 	
+	private static final String TABLE_ALIAS="@as";
+	
 	static{
 		flags=new ArrayList<String>();
 		flags.add("@list");
@@ -27,6 +30,11 @@ public class TableColumnsModule {
 	}
 	
 	public List<String> getEntity(QueryBody q){
+		Map<String,String> tableAlias=q.getTableAlias();
+		if(tableAlias==null){
+			tableAlias=new HashMap<String,String>();
+			q.setTableAlias(tableAlias);
+		}
 		List<String> entityColumns=q.getEntityColumns();
 		List<String> entities=new ArrayList<String>();
 		if(entityColumns!=null){
@@ -43,8 +51,19 @@ public class TableColumnsModule {
 						entities.add(entityColumn);
 					}
 				}else{
-					if(!entities.contains(entityColumn)){
-						entities.add(entityColumn.substring(entityColumn.indexOf(currentFlag)+currentFlag.length()));
+					String tableName=entityColumn.substring(entityColumn.indexOf(currentFlag)+currentFlag.length());
+					if(tableName.contains(TABLE_ALIAS)){
+						int index=tableName.indexOf(TABLE_ALIAS);
+						String realTableName=tableName.substring(0,index);
+						String alias=tableName.substring(index+TABLE_ALIAS.length());
+						tableAlias.put(alias,realTableName);
+						if(!entities.contains(alias)){
+							entities.add(alias);
+						}
+					}else{
+						if(!entities.contains(tableName)){
+							entities.add(tableName);
+						}
 					}
 				}
 			}
@@ -60,7 +79,6 @@ public class TableColumnsModule {
 		List<String> entityColumns=q.getEntityColumns();
 		if(entityColumns!=null && entityColumns.size()>0){
 			List<String> columns=new ArrayList<String>();
-			columns.clear();
 			String fatherEntity=null;
 			for(String entity:entityColumns){
 				String currentFlag=null;
@@ -76,11 +94,11 @@ public class TableColumnsModule {
 				if(currentFlag==null){
 					fatherEntity=entity;
 					q.setFatherEntity(fatherEntity);
-					List<String> currentColumns=getColumns(entity);
+					List<String> currentColumns=getColumns(entity,q);
 					columns.addAll(currentColumns);
 				}else{
 					String[] parts=splitTwo(entity,currentFlag);
-					List<String> currentColumns=getColumns(parts[1]);
+					List<String> currentColumns=getColumns(parts[1],q);
 					for(String currentColumn:currentColumns){
 						if(reNameTables!=null){
 							currentColumn=processRenameTable(currentColumn,reNameTables.get(parts[1]));
@@ -138,9 +156,27 @@ public class TableColumnsModule {
 		return ret;
 	}
 	
-	private List<String> getColumns(String table){
-		List<String> currentColumns=tableColumnsService.getColumns(table);
-		Assert.notEmpty(currentColumns,"在table的columns配置中找不到table为"+table+"的columns");
+	private List<String> getColumns(String table,QueryBody q){
+		String realTable=table;
+		String alias=null;
+		if(table.contains(TABLE_ALIAS)){
+			int index=table.indexOf(TABLE_ALIAS);
+			realTable=table.substring(0,index);
+			alias=table.substring(index+TABLE_ALIAS.length());
+		}
+		List<String> currentColumns=tableColumnsService.getColumns(realTable);
+		Assert.notEmpty(currentColumns,"在table的columns配置中找不到table为"+realTable+"的columns");
+		if(alias!=null){
+			List<String> aliasCurrentColumns=new ArrayList<String>();
+			for(String column:currentColumns){
+				if(column.startsWith(realTable)){
+					aliasCurrentColumns.add(column.replaceFirst(realTable+"\\.",alias+"."));
+				}else{
+					aliasCurrentColumns.add(column);
+				}
+			}
+			return aliasCurrentColumns;
+		}
 		return currentColumns;
 	}
 	

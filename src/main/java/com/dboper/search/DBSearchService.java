@@ -36,6 +36,7 @@ import com.dboper.search.observer.ProcessQueryFileChange;
 import com.dboper.search.observer.QueryFileListener;
 import com.dboper.search.util.FileUtil;
 import com.dboper.search.util.GroupColumnsUtils;
+import com.dboper.search.util.JsonUtils;
 import com.dboper.search.util.MapUtil;
 
 @Service
@@ -144,7 +145,14 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 		if(StringUtils.hasLength(sql)){
 			long sqlSatrtTime=System.currentTimeMillis();
 			logger.info("解析成sql花费了:{} ms",sqlSatrtTime-sqlParseStartTime);
-			List<Map<String, Object>> data=config.getJdbcTemplate().queryForList(sql);
+			List<Map<String, Object>> data;
+			try {
+				data = config.getJdbcTemplate().queryForList(sql);
+			} catch (Exception e) {
+				e.printStackTrace();
+				clearCache(e.getMessage(),q.getCacheKey());
+				throw new RuntimeException(e);
+			}
 			String unionTablesPath=q.getUnionTablesPath();
 			if(StringUtils.hasLength(unionTablesPath)){
 				QueryBody unionQ=new QueryBody();
@@ -160,7 +168,15 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 				String unionSql=sqlService.getSql(unionQ);
 				if(StringUtils.hasLength(unionSql)){
 					logger.info("使用了联合查询");
-					data.addAll(config.getJdbcTemplate().queryForList(unionSql));
+					List<Map<String, Object>> joinData;
+					try {
+						joinData = config.getJdbcTemplate().queryForList(sql);
+					} catch (Exception e) {
+						e.printStackTrace();
+						clearCache(e.getMessage(),unionQ.getCacheKey());
+						throw new RuntimeException(e);
+					}
+					data.addAll(joinData);
 				}
 			}
 			Map<String,Object> originConstantData=q.getOriginConstantData();
@@ -176,6 +192,12 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 			return new ArrayList<Map<String,Object>>();
 		}
 	}
+	
+	private void clearCache(String because,String cacheKey){
+		sqlService.clearCache(cacheKey);
+		logger.warn("清除对应的cacheKey:"+cacheKey+";清除原因:"+because);
+	}
+
 	
 	@SuppressWarnings("unchecked")
 	public List<Map<String,Object>> selectComplex(ComplexQueryBody complexQueryBody){
@@ -342,10 +364,10 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 		if(q==null){
 			return null;
 		}
-		QueryBody copy;
+		QueryBody copy=null;
 		try {
-			copy = q.clone();
-		} catch (CloneNotSupportedException e) {
+			copy = JSON.parseObject(JsonUtils.fastJsonDate(q),QueryBody.class);
+		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("查询参数构造失败");
 		}

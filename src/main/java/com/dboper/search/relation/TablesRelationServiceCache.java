@@ -46,6 +46,10 @@ public class TablesRelationServiceCache implements Bootstrap{
 		tableColumnsModule=new TableColumnsModule(config);
 	}
 	
+	public void clearCache(String cachekey){
+		tablesRelationPropertyService.clearCache(cachekey);
+	}
+	
 	public void refreshTablesRelationFromDB(){
 		initTablesRelationFromDB();
 	}

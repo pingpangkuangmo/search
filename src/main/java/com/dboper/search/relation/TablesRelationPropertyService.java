@@ -29,6 +29,7 @@ import com.dboper.search.domain.SonSearchBody;
 import com.dboper.search.sqlparams.DefaultSqlParamsHandlerUtils;
 import com.dboper.search.table.TableColumnsModule;
 import com.dboper.search.util.FileUtil;
+import com.dboper.search.util.ListToStringUtil;
 import com.dboper.search.util.ListUtil;
 
 public class TablesRelationPropertyService{
@@ -66,7 +67,9 @@ public class TablesRelationPropertyService{
 	
 	private static final String SON_SEARCH_PREFIX="sonSearch__";
 	
-	private static final String PARAMS_PART="%params%";
+	private static final String PARAMS_PART="%where%";
+	
+	private static final String TABLE_PREFIX_FLAG="%tp%";
 	
 	public TablesRelationPropertyService(BaseTwoTablesRelationConfig config){
 		this.config=config;
@@ -176,6 +179,7 @@ public class TablesRelationPropertyService{
 			if(StringUtils.hasLength(relation)){
 				//成功找到，添加到缓存
 				if(!cachekey.endsWith("_no_cache")){
+					q.setCacheKey(cachekey);
 					addCache(cachekey,q.getTablesPath(),relation,q.getColumns(),q.isHasSon(),q.getFatherEntity());
 					logger.info("entityNames的cacheKey:"+cachekey+" 添加到缓存");
 				}
@@ -207,6 +211,11 @@ public class TablesRelationPropertyService{
 		entityNameContext.setFatherEntity(fatherEntity);
 		entityNamesData.put(tablePath,entityNameContext);
 	}
+	
+
+	public void clearCache(String cachekey){
+		entityNameCache.remove(cachekey);
+	}
 
 	private void addCache(String cachekey,String tablePath,String relation,List<String> columns,boolean hasSon,String fatherEntity){
 		Map<String,EntityNameContext> currentData=new HashMap<String,EntityNameContext>();
@@ -226,21 +235,32 @@ public class TablesRelationPropertyService{
 		if(entities!=null && entities.size()==0){
 			return System.currentTimeMillis()+"_no_cache";
 		}
-		sb.append(getMapKeyString(q.getParams()));
-		Map<String,Map<String,Object>> sonParams=q.getSonParams();
-		if(sonParams!=null && sonParams.size()>0){
-			List<String> keys=new ArrayList<String>(sonParams.keySet());
-			Collections.sort(keys);
-			for(String key:keys){
+		sb.append(ListToStringUtil.arrayToString(entities,"__"));
+		sb.append(q.getTablesPath());
+		sb.append(q.getUnionTablesPath());
+		sb.append(getMapKeyString(q.getParams(),false));
+		sb.append(getMapKeyString(q.getSonParams(),false));
+		Map<String,SonSearchBody> sonSearchs=q.getSonSearchs();
+		if(sonSearchs!=null && sonSearchs.size()>0){
+			Set<String> keys=sonSearchs.keySet();
+			List<String> listKeys=new ArrayList<String>(keys);
+			Collections.sort(listKeys);
+			for(String key:listKeys){
 				sb.append(key);
-				sb.append(getMapKeyString(sonParams.get(key)));
+				SonSearchBody value=sonSearchs.get(key);
+				if(value!=null){
+					sb.append("{");
+					sb.append(value.getRelation()).append(";").append(value.getSql());
+					sb.append(getMapKeyString(value.getParams(),true));
+					sb.append("}");
+				}
 			}
 		}
 		return sb.toString();
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private String getMapKeyString(Map params){
+	private String getMapKeyString(Map params,boolean logValue){
 		if(params==null || params.size()==0){
 			return "{}";
 		}
@@ -252,7 +272,13 @@ public class TablesRelationPropertyService{
 			sb.append(key);
 			Object value=params.get(key);
 			if(value!=null && value instanceof Map){
-				sb.append(getMapKeyString((Map)value));
+				sb.append("{");
+				sb.append(getMapKeyString((Map)value,logValue));
+				sb.append("}");
+			}else{
+				if(logValue){
+					sb.append(":").append(value);
+				}
 			}
 		}
 		return sb.toString();
@@ -408,7 +434,7 @@ public class TablesRelationPropertyService{
 			String realTableRightFull=config.getTablePrefix()+realTableRight;
 			sonSearchTable.append(" (select * from ").append(realTableRightFull);
 			if(paramsLen>0){
-				String sqlParams=DefaultSqlParamsHandlerUtils.defaultSqlParamsHandler.getSqlWhereParams(params);
+				String sqlParams=DefaultSqlParamsHandlerUtils.defaultSqlParamsHandler.getSqlWhereParams(params,true);
 				sonSearchTable.append(" where ").append(sqlParams);
 			}
 			sonSearchTable.append(" ) ").append(realTableRightFull);
@@ -428,36 +454,38 @@ public class TablesRelationPropertyService{
 				sb.append(" ").append(relation.replaceFirst(realTableRightFull,sonSearchTable.toString()));
 			}
 		}else{
+			sb.append(" ").append(joinType);
 			boolean hasWhere=sql.contains(" where ");
 			if(hasWhere){
 				String[] paramsParts=sql.split(PARAMS_PART);
-				if(paramsParts.length==3 && paramsLen>0){
-					String sqlParams=DefaultSqlParamsHandlerUtils.defaultSqlParamsHandler.getSqlWhereParams(params);
-					if(sqlParams!=null && sqlParams.length()>0){
-						sb.append(" ").append(paramsParts[0]);
-						sb.append(" ").append(paramsParts[1]).append(" and ").append(sqlParams)
-							.append(" ").append(paramsParts[2]);
+				if(paramsParts.length==3){
+					sb.append(" ").append(paramsParts[0]);
+					sb.append(" ").append(paramsParts[1]);
+					if(paramsLen>0){
+						String sqlParams=DefaultSqlParamsHandlerUtils.defaultSqlParamsHandler.getSqlWhereParams(params,true);
+						if(sqlParams!=null && sqlParams.length()>0){
+							sb.append(" and ").append(sqlParams);
+						}else{
+							return false;
+						}
 					}
+					sb.append(" ").append(paramsParts[2]);
 				}else{
 					sb.append(" ").append(sql);
 				}
 			}else{
-				if(paramsLen>0){
-					String[] paramsParts=sql.split(PARAMS_PART);
-					String sqlParams=DefaultSqlParamsHandlerUtils.defaultSqlParamsHandler.getSqlWhereParams(params);
-					if(sqlParams!=null && sqlParams.length()>0){
-						if(paramsParts.length==2){
-							sb.append(" ").append(paramsParts[0]);
-							sb.append(" where ").append(sqlParams)
-								.append(" ").append(paramsParts[1]);
-						}else if(paramsParts.length==3){
-							sb.append(" ").append(paramsParts[0]);
-							sb.append(" where ").append(sqlParams)
-								.append(" ").append(paramsParts[2]);
+				String[] paramsParts=sql.split(PARAMS_PART);
+				if(paramsParts.length==3){
+					sb.append(" ").append(paramsParts[0]);
+					if(paramsLen>0){
+						String sqlParams=DefaultSqlParamsHandlerUtils.defaultSqlParamsHandler.getSqlWhereParams(params,true);
+						if(sqlParams!=null && sqlParams.length()>0){
+							sb.append(" where ").append(sqlParams);
+						}else{
+							return false;
 						}
-					}else{
-						sb.append(" ").append(sql);
 					}
+					sb.append(" ").append(paramsParts[2]);
 				}else{
 					sb.append(" ").append(sql);
 				}
@@ -491,7 +519,7 @@ public class TablesRelationPropertyService{
 		if(sql==null){
 			return null;
 		}
-		return sql.replaceAll("%tprefix%",config.getTablePrefix());
+		return sql.replaceAll(TABLE_PREFIX_FLAG,config.getTablePrefix());
 	}
 
 	//这一块需要单独独立出来，形成算法处理

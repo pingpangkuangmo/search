@@ -42,6 +42,8 @@ public class QueryBody implements Cloneable{
 	//传输数据用，不用于查询配置
 	private boolean hasSon=false;
 	private String fatherEntity;
+	private Map<String,String> tableAlias=new HashMap<String,String>();
+	private String cacheKey;
 	
 	public QueryBody() {
 		super();
@@ -52,6 +54,22 @@ public class QueryBody implements Cloneable{
 		return (QueryBody)super.clone();
 	}
 	
+	public String getCacheKey() {
+		return cacheKey;
+	}
+
+	public void setCacheKey(String cacheKey) {
+		this.cacheKey = cacheKey;
+	}
+
+	public Map<String, String> getTableAlias() {
+		return tableAlias;
+	}
+
+	public void setTableAlias(Map<String, String> tableAlias) {
+		this.tableAlias = tableAlias;
+	}
+
 	public Map<String, Map<String, Object>> getSonParams() {
 		return sonParams;
 	}

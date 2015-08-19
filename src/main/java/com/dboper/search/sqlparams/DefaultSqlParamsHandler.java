@@ -54,21 +54,21 @@ public class DefaultSqlParamsHandler {
 	 * @param params 查询参数的map集合
 	 * @return	返回带有占位符的sql条件，占位符对应的值存在SqlParamsParseResult的arguments参数中
 	 */
-	public SqlParamsParseResult getSqlWhereParamsResult(Map<String,Object> params){
-		return getSqlWhereParamsResultByAndOr(params,AND,true,new SqlParamsParseResult());
+	public SqlParamsParseResult getSqlWhereParamsResult(Map<String,Object> params,boolean prefix){
+		return getSqlWhereParamsResultByAndOr(params,AND,true,prefix,new SqlParamsParseResult());
 	}
 	
 	/**
 	 * @param params
 	 * @return	不进行占位符策略，直接返回拼接的字符串，如   a.id>12
 	 */
-	public String getSqlWhereParams(Map<String,Object> params){
-		return getSqlWhereParamsResultByAndOr(params,AND,false,new SqlParamsParseResult()).getBaseWhereSql().toString();
+	public String getSqlWhereParams(Map<String,Object> params,boolean prefix){
+		return getSqlWhereParamsResultByAndOr(params,AND,false,prefix,new SqlParamsParseResult()).getBaseWhereSql().toString();
 	}
 	
 	@SuppressWarnings("unchecked")
 	private SqlParamsParseResult getSqlWhereParamsResultByAndOr(Map<String,Object> params,String andOr,
-			boolean isPlaceHolder,SqlParamsParseResult sqlParamsParseResult){
+			boolean isPlaceHolder,boolean prefix,SqlParamsParseResult sqlParamsParseResult){
 		if(params!=null){
 			String andOrDelititer=" "+andOr+" ";
 			for(String key:params.keySet()){
@@ -77,9 +77,9 @@ public class DefaultSqlParamsHandler {
 					//这里需要进行递归处理嵌套的查询条件
 					SqlParamsParseResult SqlParamsParseResultModel=null;
 					if(key.startsWith(andKey)){
-						SqlParamsParseResultModel=processModelSqlWhereParams((Map<String,Object>)value,AND,isPlaceHolder);
+						SqlParamsParseResultModel=processModelSqlWhereParams((Map<String,Object>)value,AND,isPlaceHolder,prefix);
 					}else if(key.startsWith(orKey)){
-						SqlParamsParseResultModel=processModelSqlWhereParams((Map<String,Object>)value,OR,isPlaceHolder);
+						SqlParamsParseResultModel=processModelSqlWhereParams((Map<String,Object>)value,OR,isPlaceHolder,prefix);
 					}
 					if(SqlParamsParseResultModel!=null && StringUtils.isNotEmpty(SqlParamsParseResultModel.getBaseWhereSql())){
 						sqlParamsParseResult.addSqlModel(andOrDelititer);
@@ -87,7 +87,7 @@ public class DefaultSqlParamsHandler {
 						sqlParamsParseResult.addArguments(SqlParamsParseResultModel.getArguments());
 					}
 				}else{
-					SqlParamsParseItemResult sqlParamsParseItemResult=processNormalSqlWhereParams(key,value,isPlaceHolder);
+					SqlParamsParseItemResult sqlParamsParseItemResult=processNormalSqlWhereParams(key,value,isPlaceHolder,prefix);
 					if(sqlParamsParseItemResult!=null){
 						sqlParamsParseResult.addSqlModel(andOrDelititer);
 						sqlParamsParseResult.addSqlModel(sqlParamsParseItemResult.getSqlModel(isPlaceHolder,PLACE_HOLDER));
@@ -103,17 +103,17 @@ public class DefaultSqlParamsHandler {
 		return sqlParamsParseResult;
 	}
 	
-	private SqlParamsParseResult processModelSqlWhereParams(Map<String,Object> params,String andOr,boolean isPlaceHolder){
-		return getSqlWhereParamsResultByAndOr(params,andOr,isPlaceHolder,new SqlParamsParseResult());
+	private SqlParamsParseResult processModelSqlWhereParams(Map<String,Object> params,String andOr,boolean isPlaceHolder,boolean prefix){
+		return getSqlWhereParamsResultByAndOr(params,andOr,isPlaceHolder,prefix,new SqlParamsParseResult());
 	}
 	
-	private SqlParamsParseItemResult processNormalSqlWhereParams(String key,Object value,boolean isPlaceHolder) {
+	private SqlParamsParseItemResult processNormalSqlWhereParams(String key,Object value,boolean isPlaceHolder,boolean prefix) {
 		SqlParamsParseItemResult sqlParamsParseItemResult=null;
 		String[] parts=key.split(separatorFlag);
 		if(parts.length==2){
 			for(SqlParamsParser sqlParamsParser:sqlParamsParsers){
 				if(sqlParamsParser.support(parts[1])){
-					String fullColumn=ListToStringUtil.getFullTable(parts[0],keyPrefix);
+					String fullColumn=ListToStringUtil.getFullTable(parts[0],keyPrefix,prefix);
 					if(isPlaceHolder){
 						sqlParamsParseItemResult=sqlParamsParser.getPlaceHolderParamsResult(fullColumn,value,parts[1]);
 					}else{
@@ -127,7 +127,7 @@ public class DefaultSqlParamsHandler {
 			if(!isPlaceHolder){
 				tmpValue=SqlStringUtils.processString(value);
 			}
-			sqlParamsParseItemResult=new SqlParamsParseItemResult(ListToStringUtil.getFullTable(key,keyPrefix),"=",tmpValue);
+			sqlParamsParseItemResult=new SqlParamsParseItemResult(ListToStringUtil.getFullTable(key,keyPrefix,prefix),"=",tmpValue);
 		}
 		return sqlParamsParseItemResult;
 	}

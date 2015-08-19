@@ -41,6 +41,10 @@ public class SqlService implements Bootstrap{
 		tablesRelationServiceCache.init();
 	}
 	
+	public void clearCache(String cachekey){
+		tablesRelationServiceCache.clearCache(cachekey);
+	}
+	
 	public void initTablesRelationFromDB(){
 		tablesRelationServiceCache.refreshTablesRelationFromDB();
 	}
@@ -89,14 +93,14 @@ public class SqlService implements Bootstrap{
 		sql.append(relation);
 		if(params!=null && !params.isEmpty()){
 			if(isPlaceHolder){
-				SqlParamsParseResult sqlParamsParseResult=defaultSqlParamsHandler.getSqlWhereParamsResult(params);
+				SqlParamsParseResult sqlParamsParseResult=defaultSqlParamsHandler.getSqlWhereParamsResult(params,true);
 				String baseWhereSql=sqlParamsParseResult.getBaseWhereSql().toString();
 				if(StringUtils.isNotEmpty(baseWhereSql)){
 					sql.append(" where ").append(baseWhereSql);
 					sqlResult.setArguments(sqlParamsParseResult.getArguments());
 				}
 			}else{
-				String baseWhereSql=defaultSqlParamsHandler.getSqlWhereParams(params);
+				String baseWhereSql=defaultSqlParamsHandler.getSqlWhereParams(params,true);
 				if(StringUtils.isNotEmpty(baseWhereSql)){
 					sql.append(" where ").append(baseWhereSql);
 				}
@@ -110,7 +114,7 @@ public class SqlService implements Bootstrap{
 		if(order_by!=null && order_by.size()>0){
 			sql.append(" order by ");
 			for(String item:order_by){
-				sql.append(ListToStringUtil.getFullTable(item,tablePrefix)).append(",");
+				sql.append(ListToStringUtil.getFullTable(item,tablePrefix,true)).append(",");
 			}
 			sql.deleteCharAt(sql.length()-1);
 		}

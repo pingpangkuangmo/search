@@ -30,9 +30,9 @@ public class ListToStringUtil {
 		return str.toString();
 	}
 	
-	public static String getFullTable(String table,String tablePrefix){
+	public static String getFullTable(String table,String tablePrefix,boolean prefix){
 		if(table!=null && tablePrefix!=null){
-			if(table.indexOf(tablePrefix)!=0){
+			if(table.indexOf(tablePrefix)!=0 && prefix){
 				return tablePrefix+table;
 			}
 		}
