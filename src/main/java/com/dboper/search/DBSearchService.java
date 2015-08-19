@@ -300,6 +300,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 	}
 	
 	private List<Map<String,Object>> process(List<Map<String, Object>> data,QueryBody q){
+		long startTime=System.currentTimeMillis();
 		data=processData(data,q);
 		List<String> deleteColumns=q.getDeleteColumns();
 		List<String> processors=q.getProcessors();
@@ -320,6 +321,8 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 				}
 			}
 		}
+		long endTime=System.currentTimeMillis();
+		logger.info("结构聚合花费了{} ms",endTime-startTime);
 		return data;
 	}
 	
