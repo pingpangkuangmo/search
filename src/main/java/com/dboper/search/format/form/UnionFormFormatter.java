@@ -151,8 +151,6 @@ public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 				if(len==1){
 					fatherTotal.put(objName,obj);
  				}else if(len>1 && formatter instanceof MapFormFormatter){
- 					//只支持向map对象中套map对象，即"app","product@mapproduct","product.productLine@mapproduct_line"
- 					//不支持向map对象中套list对象，即"access_group","slb@mapslb","slb.vips@listslb_vips"
 					MapUtil.addMapsonToMap(fatherTotal, parts, obj);
 				}else if(len>1 && formatter instanceof ListFormFormatter){
 					fatherTotal.put(objName,obj);

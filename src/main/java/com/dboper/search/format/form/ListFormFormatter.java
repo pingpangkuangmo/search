@@ -78,9 +78,7 @@ public class ListFormFormatter implements FormFormatter{
 					if(baseLists!=null && obj!=null && baseLists.containsKey(objName)){
 						List<Object> objs=(List<Object>)equalsFather.get(objName);
 						Object keyValue=obj.get(baseLists.get(objName));
-						if(keyValue!=null && !objs.contains(keyValue)){
-							objs.add(keyValue);
-						}
+						MapUtil.judgeObjectExitsAndAdd(objs,keyValue);
 					}else{
 						List<Map<String,Object>> objs=null;
 						Object oldObjs=equalsFather.get(objName);
@@ -94,71 +92,19 @@ public class ListFormFormatter implements FormFormatter{
 						}else if(oldObjs instanceof List){
 							objs=(List<Map<String, Object>>) oldObjs;
 						}
-						boolean exitsSonItem=false;
-						for(Map<String,Object> objItem:objs){
-							if(MapUtil.compareMapEquals(objItem,obj)){
-								exitsSonItem=true;
-								break;
-							}
-						}
-						if(!exitsSonItem){
-							if(!MapUtil.mapValueEmpty(obj)){
-								objs.add(obj);
-							}
-						}
+						MapUtil.judgeMapExitsAndAdd(objs,obj);
 					}
 				}else if(len==2){
-					addItemToList(equalsFather,obj,objName, parts,q.getBaseLists());
+					MapUtil.addMapsonToList(equalsFather,objName, parts, obj, q.getBaseLists());
 				}
 				
 			}
 			for(String listName:listNames){
 				List<Object> objs=(List<Object>)equalsFather.get(listName);
 				Object obj=fatherTotal.get(listName);
-				boolean exitsSonItem=false;
-				for(Object objItem:objs){
-					if(objItem.equals(obj)){
-						exitsSonItem=true;
-						break;
-					}
-				}
-				if(!exitsSonItem){
-					if(obj!=null){
-						objs.add(obj);
-					}
-				}
+				MapUtil.judgeObjectExitsAndAdd(objs,obj);
 			}
 			return null;
-		}
-	}
-	
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private void addItemToList(Map<String,Object> equalsFather,Map<String,Object> dataItem,
-			String objName,String[] parts,Map<String,String> baseLists){
-		boolean baseListObj=false;
-		if(baseLists.containsKey(objName)){
-			baseListObj=true;
-		}
-		Object prefixObj=equalsFather.get(parts[0]);
-		if(prefixObj!=null && prefixObj instanceof Map){
-			Map<String,Object> firstMap=((Map<String,Object>)prefixObj);
-			ArrayList<Object> secondObj=(ArrayList<Object>) firstMap.get(parts[1]);
-			if(secondObj==null){
-				secondObj=new ArrayList<Object>();
-				firstMap.put(parts[1],secondObj);
-			}
-			if(baseListObj && dataItem!=null){
-				Object base=dataItem.get(baseLists.get(objName));
-				if(base!=null && !secondObj.contains(base)){
-					if(base instanceof List){
-						secondObj.addAll((List)base);
-					}else{
-						secondObj.add(base);
-					}
-				}
-			}else if(!baseListObj && dataItem!=null){
-				secondObj.add(dataItem);
-			}
 		}
 	}
 }
