@@ -170,7 +170,7 @@ public class TablesRelationPropertyService{
 			if(StringUtils.hasLength(relation)){
 				//成功找到，添加到缓存
 				if(!cachekey.endsWith("_no_cache")){
-					addCache(cachekey,q.getTablesPath(),relation,q.getColumns(),q.isHasSon(),q.getFatherEntity());
+					addCache(cachekey,q.getTablesPath(),relation,q.getColumns(),q.isHasSon(),q.getFatherEntity(),q.getDeleteColumnsCache());
 					logger.info("entityNames的cacheKey:"+cachekey+" 添加到缓存");
 				}
 			}
@@ -187,6 +187,7 @@ public class TablesRelationPropertyService{
 				q.setColumns(entityNameContext.getColumns());
 				q.setHasSon(entityNameContext.getHasSon());
 				q.setFatherEntity(entityNameContext.getFatherEntity());
+				q.getDeleteColumns().addAll(entityNameContext.getDeleteColumns());
 				tableColumnsModule.addGroupColumns(q);
 				return entityNameContext.getRelation();
 			}
@@ -202,13 +203,15 @@ public class TablesRelationPropertyService{
 		entityNamesData.put(tablePath,entityNameContext);
 	}
 
-	private void addCache(String cachekey,String tablePath,String relation,List<String> columns,boolean hasSon,String fatherEntity){
+	private void addCache(String cachekey,String tablePath,String relation,List<String> columns,
+			boolean hasSon,String fatherEntity,List<String> deleteColumns){
 		Map<String,EntityNameContext> currentData=new HashMap<String,EntityNameContext>();
 		EntityNameContext entityNameContext=new EntityNameContext();
 		entityNameContext.setRelation(relation);
 		entityNameContext.setColumns(columns);
 		entityNameContext.setHasSon(hasSon);
 		entityNameContext.setFatherEntity(fatherEntity);
+		entityNameContext.setDeleteColumns(deleteColumns);
 		currentData.put(tablePath,entityNameContext);
 		entityNameCache.put(cachekey,currentData);
 	}

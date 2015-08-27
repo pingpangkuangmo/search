@@ -110,6 +110,7 @@ public class TableColumnsModule {
 			if(!columns.contains(fatherIdColumn)){
 				columns.add(fatherIdColumn);
 				q.getDeleteColumns().add(fatherIdColumn);
+				q.getDeleteColumnsCache().add(fatherIdColumn);
 			}
 			groupColumns.add(fatherIdColumn);
 		}
