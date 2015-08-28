@@ -148,10 +148,9 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 			List<Map<String, Object>> data;
 			try {
 				data = config.getJdbcTemplate().queryForList(sql);
-			} catch (Exception e) {
-				e.printStackTrace();
+			} catch (RuntimeException e) {
 				clearCache(e.getMessage(),q.getCacheKey());
-				throw new RuntimeException(e);
+				throw e;
 			}
 			String unionTablesPath=q.getUnionTablesPath();
 			if(StringUtils.hasLength(unionTablesPath)){
@@ -171,10 +170,9 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 					List<Map<String, Object>> joinData;
 					try {
 						joinData = config.getJdbcTemplate().queryForList(unionSql);
-					} catch (Exception e) {
-						e.printStackTrace();
+					} catch (RuntimeException e) {
 						clearCache(e.getMessage(),unionQ.getCacheKey());
-						throw new RuntimeException(e);
+						throw e;
 					}
 					data.addAll(joinData);
 				}
