@@ -170,7 +170,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 					logger.info("使用了联合查询");
 					List<Map<String, Object>> joinData;
 					try {
-						joinData = config.getJdbcTemplate().queryForList(sql);
+						joinData = config.getJdbcTemplate().queryForList(unionSql);
 					} catch (Exception e) {
 						e.printStackTrace();
 						clearCache(e.getMessage(),unionQ.getCacheKey());

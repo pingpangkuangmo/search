@@ -75,6 +75,9 @@ public class MapUtil {
 			return false;
 		}
 		if(!map1Empty && !map2Empty){
+			if(map1.size()!=map2.size()){
+				return false;
+			}
 			for(String key:map1.keySet()){
 				Object value1=map1.get(key);
 				Object value2=map2.get(key);
@@ -101,22 +104,30 @@ public class MapUtil {
 			baseListObj=true;
 		}
 		int len=prefixs.length;
+		//list对象放到map对象上目前只支持一级扩展，而map对象放到map对象上目前是无限支持
 		if(len==2){
 			Object prefixObj=tmpObj.get(prefixs[0]);
 			if(prefixObj!=null && prefixObj instanceof Map){
 				Map<String,Object> firstMap=((Map<String,Object>)prefixObj);
-				ArrayList<Object> secondObj=(ArrayList<Object>) firstMap.get(prefixs[1]);
-				if(secondObj==null){
-					secondObj=new ArrayList<Object>();
-					firstMap.put(prefixs[1],secondObj);
-				}
-				if(baseListObj && obj!=null){
-					Object base=obj.get(baseLists.get(objName));
-					if(base!=null && !secondObj.contains(base)){
-						secondObj.add(base);
+				if(baseListObj){
+					List<Object> secondObj=(ArrayList<Object>) firstMap.get(prefixs[1]);
+					if(secondObj==null){
+						secondObj=new ArrayList<Object>();
+						firstMap.put(prefixs[1],secondObj);
 					}
-				}else if(!baseListObj && obj!=null){
-					secondObj.add(obj);
+					if(obj!=null){
+						Object base=obj.get(baseLists.get(objName));
+						if(base!=null && !secondObj.contains(base)){
+							secondObj.add(base);
+						}
+					}
+				}else{
+					List<Map<String,Object>> secondObj=(ArrayList<Map<String,Object>>) firstMap.get(prefixs[1]);
+					if(secondObj==null){
+						secondObj=new ArrayList<Map<String,Object>>();
+						firstMap.put(prefixs[1],secondObj);
+					}
+					MapUtil.judgeMapExitsAndAdd(secondObj,obj);
 				}
 			}
 		}
@@ -139,6 +150,27 @@ public class MapUtil {
 		}
 		if(tmpObj!=null){
 			tmpObj.put(prefixs[len-1],obj);
+		}
+	}
+	
+	public static void judgeMapExitsAndAdd(List<Map<String,Object>> objs,Map<String,Object> obj){
+		boolean exitsSonItem=false;
+		for(Map<String,Object> objItem:objs){
+			if(MapUtil.compareMapEquals(objItem,obj)){
+				exitsSonItem=true;
+				break;
+			}
+		}
+		if(!exitsSonItem){
+			if(!MapUtil.mapValueEmpty(obj)){
+				objs.add(obj);
+			}
+		}
+	}
+	
+	public static void judgeObjectExitsAndAdd(List<Object> objs,Object obj){
+		if(!objs.contains(obj) && obj!=null){
+			objs.add(obj);
 		}
 	}
 	

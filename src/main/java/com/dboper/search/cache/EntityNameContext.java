@@ -10,6 +10,16 @@ public class EntityNameContext extends HashMap<String,Object>{
 	private static final String COLUMNS="columns";
 	private static final String HAS_SON="hasSon";
 	private static final String FATHER_ENTITY="fatherEntity";
+	private static final String DELETE_COLUMNS="deleteColumns";
+	
+	@SuppressWarnings("unchecked")
+	public List<String> getDeleteColumns(){
+		return (List<String>) get(DELETE_COLUMNS);
+	}
+	
+	public void setDeleteColumns(List<String> deleteColumns){
+		put(DELETE_COLUMNS,deleteColumns);
+	}
 	
 	public String getFatherEntity(){
 		return (String) get(FATHER_ENTITY);

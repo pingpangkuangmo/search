@@ -20,6 +20,7 @@ public class QueryBody implements Cloneable{
 	private String tablesPath;
 	private List<String> entityColumns=new ArrayList<String>();
 	private List<String> deleteColumns=new ArrayList<String>();
+	private List<String> deleteColumnsCache=new ArrayList<String>();
 	private String groupBy;
 	
 	private Map<String,Object> constantData=new HashMap<String,Object>();
@@ -94,6 +95,14 @@ public class QueryBody implements Cloneable{
 		this.order_by = order_by;
 	}
 	
+	public List<String> getDeleteColumnsCache() {
+		return deleteColumnsCache;
+	}
+
+	public void setDeleteColumnsCache(List<String> deleteColumnsCache) {
+		this.deleteColumnsCache = deleteColumnsCache;
+	}
+
 	public Map<String, Object> getOriginConstantData() {
 		return originConstantData;
 	}
