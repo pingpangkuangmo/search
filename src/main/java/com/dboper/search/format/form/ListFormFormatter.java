@@ -57,7 +57,6 @@ public class ListFormFormatter implements FormFormatter{
 				}else if(parts.length>1){
 					MapUtil.addMapsonToList(fatherTotal,objName,parts,obj,q.getBaseLists());
 				}
-				
 			}
 			for(String listName:listNames){
 				Object obj=fatherTotal.get(listName);

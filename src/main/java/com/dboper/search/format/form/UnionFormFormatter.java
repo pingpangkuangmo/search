@@ -78,7 +78,7 @@ public class UnionFormFormatter implements ProcessUnit<FormFormatterContext>{
 				continue;
 			}
 			if(processFormat(columnsInfo, formatter, ret, fatherTotal, allRets, q)==null){
-				break;
+				return null;
 			}
 		}
 		return fatherTotal;

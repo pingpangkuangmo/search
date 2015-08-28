@@ -166,7 +166,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 				unionQ.setParams(q.getUnionParams());
 				String unionSql=sqlService.getSql(unionQ);
 				if(StringUtils.hasLength(unionSql)){
-					logger.info("使用了联合查询");
+					logger.info("使用了联合查询,unionSql={}",unionSql);
 					List<Map<String, Object>> joinData;
 					try {
 						joinData = config.getJdbcTemplate().queryForList(unionSql);
