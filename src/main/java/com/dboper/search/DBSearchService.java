@@ -208,7 +208,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 		Map<String,SecondQueryBody> secondQuery=complexQueryBody.getSecondQuery();
 		
 		Map<String,List<Object>> propertyListEntityPks=new HashMap<String,List<Object>>();
-		Map<String,Map<Object,Map<String,Object>>> propertyListAndMapEntityPksEntity=new HashMap<String,Map<Object,Map<String,Object>>>();
+		Map<String,Map<Object,List<Map<String,Object>>>> propertyListAndMapEntityPksEntity=new HashMap<String,Map<Object,List<Map<String,Object>>>>();
 		
 		for(Map<String,Object> firstData:firstDatas){
 			for(String property:secondQuery.keySet()){
@@ -235,7 +235,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 			if(propertyListEntityPks.containsKey(property)){
 				List<Object> entityPks=propertyListEntityPks.get(property);
 				if(entityPks!=null && entityPks.size()>0){
-					Map<Object,Map<String,Object>> propertyLists=propertyListAndMapEntityPksEntity.get(property);
+					Map<Object,List<Map<String,Object>>> propertyLists=propertyListAndMapEntityPksEntity.get(property);
 					replaceListData(secondQuery.get(property),entityPks,propertyLists);
 				}
 			}
@@ -247,7 +247,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 	
 	private void collectPkAndEntity(String property,Map<String,Object> propertyData,SecondQueryBody secondQueryItem,
 			Map<String,List<Object>> propertyListEntityPks,
-			Map<String,Map<Object,Map<String,Object>>> propertyListAndMapEntityPksEntity){
+			Map<String,Map<Object,List<Map<String,Object>>>> propertyListAndMapEntityPksEntity){
 		if(propertyData!=null){
 			Object entityPk=propertyData.get(secondQueryItem.getKeyField());
 			if(entityPk!=null){
@@ -257,18 +257,23 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 					propertyListEntityPks.put(property, entityPks);
 				}
 				entityPks.add(entityPk);
-				Map<Object,Map<String,Object>> entityPksEntity=propertyListAndMapEntityPksEntity.get(property);
+				Map<Object,List<Map<String,Object>>> entityPksEntity=propertyListAndMapEntityPksEntity.get(property);
 				if(entityPksEntity==null){
-					entityPksEntity=new HashMap<Object,Map<String,Object>>();
+					entityPksEntity=new HashMap<Object,List<Map<String,Object>>>();
 					propertyListAndMapEntityPksEntity.put(property,entityPksEntity);
 				}
-				entityPksEntity.put(entityPk,propertyData);
+				List<Map<String,Object>> entities=entityPksEntity.get(entityPk);
+				if(entities==null){
+					entities=new ArrayList<Map<String,Object>>();
+					entityPksEntity.put(entityPk,entities);
+				}
+				entities.add(propertyData);
 			}
 		}
 	}
 	
 	private void replaceListData(SecondQueryBody secondQueryItem,List<Object> entityPks,
-			Map<Object,Map<String,Object>> propertyLists){
+			Map<Object,List<Map<String,Object>>> propertyLists){
 		List<Map<String,Object>> secondDatas=null;
 		if(secondQueryItem.isComplex()){
 			secondDatas=selectComplex(secondQueryItem.getSecondAction(),
@@ -280,12 +285,14 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 		if(secondDatas!=null && secondDatas.size()>0){
 			for(Map<String,Object> secondData:secondDatas){
 				Object entityPk=secondData.get(secondQueryItem.getKeyField());
-				Map<String,Object> oldSecondData=propertyLists.get(entityPk);
-				if(oldSecondData!=null){
-					oldSecondData.clear();
-					oldSecondData.putAll(secondData);
+				List<Map<String,Object>> oldSecondDatas=propertyLists.get(entityPk);
+				if(oldSecondDatas!=null){
+					for(Map<String,Object> oldSecondData:oldSecondDatas){
+						oldSecondData.clear();
+						oldSecondData.putAll(secondData);
+					}
 				}
-			}
+			} 
 		}
 	}
 	
