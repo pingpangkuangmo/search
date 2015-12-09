@@ -227,6 +227,10 @@ public class QueryBody implements Cloneable{
 		this.columns.add(column);
 	}
 	
+	public void addEntityColumns(String entityColumn){
+		this.entityColumns.add(entityColumn);
+	}
+	
 	public void putParams(String key,Object value){
 		this.params.put(key, value);
 	}

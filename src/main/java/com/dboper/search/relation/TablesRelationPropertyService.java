@@ -26,6 +26,7 @@ import com.dboper.search.cache.EntityNameContext;
 import com.dboper.search.config.BaseTwoTablesRelationConfig;
 import com.dboper.search.domain.QueryBody;
 import com.dboper.search.domain.SonSearchBody;
+import com.dboper.search.exception.cache.CacheException;
 import com.dboper.search.sqlparams.DefaultSqlParamsHandlerUtils;
 import com.dboper.search.table.TableColumnsModule;
 import com.dboper.search.util.FileUtil;
@@ -215,7 +216,14 @@ public class TablesRelationPropertyService{
 	
 
 	public void clearCache(String cachekey){
-		entityNameCache.remove(cachekey);
+		if(cachekey==null){
+			return;
+		}
+		try {
+			entityNameCache.remove(cachekey);
+		} catch (CacheException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void addCache(String cachekey,String tablePath,String relation,List<String> columns,
@@ -357,6 +365,9 @@ public class TablesRelationPropertyService{
 		String intersectionTable=null;
 		for(int j=i;j>=0;j--){
 			String tableLeft=tables[j].trim();
+			if(tableLeft.startsWith(SON_SEARCH_PREFIX)){
+				tableLeft=tableLeft.substring(SON_SEARCH_PREFIX.length());
+			}
 			String otherTablesStr=getSortStr(realTableRight,tableLeft,list);
 			relation=baseTwoTablesRelation.get(otherTablesStr);
 			if(relation!=null){
@@ -368,6 +379,9 @@ public class TablesRelationPropertyService{
 		if(relation==null){
 			for(int j=i;j>=0;j--){
 				String tableLeft=tables[j].trim();
+				if(tableLeft.startsWith(SON_SEARCH_PREFIX)){
+					tableLeft=tableLeft.substring(SON_SEARCH_PREFIX.length());
+				}
 				//用于处理中间表，扩展一级 organization 和 product_line都含有organization_product_lines表，所以自动把中间表加入进来
 				//需要提前准备这样的数据，只处理一层中间表，不再处理复杂的多级
 				List<String> tableTwoRelationTables=tableConfigAndRelationtables.get(realTableRight);
@@ -453,8 +467,8 @@ public class TablesRelationPropertyService{
 						joinStr, partSb, allTables, len, joinStrChangeTables)){
 					return false;
 				}
-				String relation=partSb.toString();
-				sb.append(" ").append(relation.replaceFirst(realTableRightFull,sonSearchTable.toString()));
+				String relation=" "+partSb.toString();
+				sb.append(" ").append(relation.replaceFirst(" "+realTableRightFull+" "," "+sonSearchTable.toString()+" "));
 			}
 		}else{
 			sb.append(" ").append(joinType);
