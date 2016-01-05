@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.monitor.FileAlterationListener;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -34,7 +34,7 @@ import com.dboper.search.util.FileUtil;
 @Service
 public class ExcelService implements Bootstrap,ProcessExcelFileChange{
 	
-	private final Log logger = LogFactory.getLog(DBSearchService.class);
+	private static final Logger logger = LoggerFactory.getLogger(ExcelService.class);
 	
 	@Autowired
 	private DBSearchService dbSearchService;

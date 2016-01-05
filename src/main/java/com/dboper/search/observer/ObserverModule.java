@@ -20,7 +20,7 @@ public class ObserverModule{
 	private ConcurrentHashMap<String,FileAlterationMonitor> monitors=new ConcurrentHashMap<String,FileAlterationMonitor>();
 	ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 	
-	private final Logger logger=LoggerFactory.getLogger(ObserverModule.class);
+	private static final Logger logger=LoggerFactory.getLogger(ObserverModule.class);
 	
 	
 	public void addObserverItem(ObserverItem observerItem){

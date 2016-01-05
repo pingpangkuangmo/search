@@ -42,7 +42,7 @@ import com.dboper.search.util.MapUtil;
 @Service
 public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQueryFileChange,Bootstrap{
 	
-	private final Logger logger=LoggerFactory.getLogger(DBSearchService.class);
+	private static final Logger logger=LoggerFactory.getLogger(DBSearchService.class);
 
 	@Autowired
 	private Configuration config;
@@ -141,10 +141,10 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 		}
 		long sqlParseStartTime=System.currentTimeMillis();
 		String sql=sqlService.getSql(q);
-		logger.info("查询构建的sql为:{}",sql);
+		logger.debug("查询构建的sql为:{}",sql);
 		if(StringUtils.hasLength(sql)){
 			long sqlSatrtTime=System.currentTimeMillis();
-			logger.info("解析成sql花费了:{} ms",sqlSatrtTime-sqlParseStartTime);
+			logger.debug("解析成sql花费了:{} ms",sqlSatrtTime-sqlParseStartTime);
 			List<Map<String, Object>> data;
 			try {
 				data = config.getJdbcTemplate().queryForList(sql);
@@ -166,7 +166,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 				unionQ.setParams(q.getUnionParams());
 				String unionSql=sqlService.getSql(unionQ);
 				if(StringUtils.hasLength(unionSql)){
-					logger.info("使用了联合查询,unionSql={}",unionSql);
+					logger.debug("使用了联合查询,unionSql={}",unionSql);
 					List<Map<String, Object>> joinData;
 					try {
 						joinData = config.getJdbcTemplate().queryForList(unionSql);
@@ -184,7 +184,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 				}
 			}
 			long sqlEndTime=System.currentTimeMillis();
-			logger.info("sql查询花费了:{} ms",sqlEndTime-sqlSatrtTime);
+			logger.debug("sql查询花费了:{} ms",sqlEndTime-sqlSatrtTime);
 			return data;
 		}else{
 			return new ArrayList<Map<String,Object>>();
@@ -193,7 +193,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 	
 	private void clearCache(String because,String cacheKey){
 		sqlService.clearCache(cacheKey);
-		logger.warn("清除对应的cacheKey:"+cacheKey+";清除原因:"+because);
+		logger.info("清除对应的cacheKey:"+cacheKey+";清除原因:"+because);
 	}
 
 	
@@ -241,7 +241,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 			}
 		}
 		long endTime=System.currentTimeMillis();
-		logger.info("复杂查询总共花费时间为："+(endTime-startTime)+" ms");
+		logger.debug("复杂查询总共花费时间为："+(endTime-startTime)+" ms");
 		return firstDatas;
 	}
 	
@@ -327,7 +327,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 			}
 		}
 		long endTime=System.currentTimeMillis();
-		logger.info("结构聚合花费了{} ms",endTime-startTime);
+		logger.debug("结构聚合花费了{} ms",endTime-startTime);
 		return data;
 	}
 	
@@ -507,7 +507,7 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 	
 	@Override
 	public void processQueryBodyChange(Map<String, QueryBody> change,String fileName) {
-		logger.info("observ "+fileName+" changed");
+		logger.debug("observ "+fileName+" changed");
 		if(change!=null){
 			initAction(change);
 			querys.putAll(change);

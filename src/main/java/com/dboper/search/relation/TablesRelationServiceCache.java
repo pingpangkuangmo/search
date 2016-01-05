@@ -37,7 +37,7 @@ public class TablesRelationServiceCache implements Bootstrap{
 	
 	private TableColumnsModule tableColumnsModule;
 	
-	private final Logger logger=LoggerFactory.getLogger(TablesRelationServiceCache.class);
+	private static final Logger logger=LoggerFactory.getLogger(TablesRelationServiceCache.class);
 	
 	@Override
 	public void init() {
@@ -85,10 +85,10 @@ public class TablesRelationServiceCache implements Bootstrap{
 			relation=this.tablesRelationPropertyService.getRelation(q,tableColumnsModule);
 		}
 		if(StringUtils.hasLength(relation)){
-			logger.info("使用了tablesPath来寻找表之间的连接关系："+relation);
+			logger.debug("使用了tablesPath来寻找表之间的连接关系："+relation);
 			return relation;
 		}
-		logger.info("tablesPath没有找到连接关系，使用了columns和params字段来推断表之间的连接关系");
+		logger.debug("tablesPath没有找到连接关系，使用了columns和params字段来推断表之间的连接关系");
 		tableColumnsModule.processQueryBodyTableCoumns(q,null);
 		List<String> tables=new ArrayList<String>();
 		for(String column:q.getColumns()){
@@ -167,7 +167,7 @@ public class TablesRelationServiceCache implements Bootstrap{
 				}
 			}
 		}
-		logger.info("tables_str="+tablesStr+";relation="+relation);
+		logger.debug("tables_str="+tablesStr+";relation="+relation);
 		return relation;
 	}
 	

@@ -62,7 +62,7 @@ public class TablesRelationPropertyService{
 	
 	private EntityNameCache entityNameCache;
 	
-	private final Logger logger=LoggerFactory.getLogger(TablesRelationPropertyService.class);
+	private static final Logger logger=LoggerFactory.getLogger(TablesRelationPropertyService.class);
 	
 	private static final String MANY_RELATION_FLAG="_as_";
 	
@@ -172,29 +172,29 @@ public class TablesRelationPropertyService{
 	
 	public String getRelation(QueryBody q,TableColumnsModule tableColumnsModule){
 		String cachekey=getCachekey(q,tableColumnsModule);
-		logger.info("拿到entityNames的cacheKey为="+cachekey);
+		logger.debug("拿到entityNames的cacheKey为="+cachekey);
 		Map<String,EntityNameContext> entityNamesData=entityNameCache.get(cachekey);
 		if(entityNamesData==null){
-			logger.info("entityNames的cacheKey:"+cachekey+" 还没有缓存");
+			logger.debug("entityNames的cacheKey:"+cachekey+" 还没有缓存");
 			String relation=parseJoinStrRelation(q,tableColumnsModule);
 			if(StringUtils.hasLength(relation)){
 				//成功找到，添加到缓存
 				if(!cachekey.endsWith("_no_cache")){
 					q.setCacheKey(cachekey);
 					addCache(cachekey,q.getTablesPath(),relation,q.getColumns(),q.isHasSon(),q.getFatherEntity(),q.getDeleteColumnsCache());
-					logger.info("entityNames的cacheKey:"+cachekey+" 添加到缓存");
+					logger.debug("entityNames的cacheKey:"+cachekey+" 添加到缓存");
 				}
 			}
 			return relation;
 		}else{
 			EntityNameContext entityNameContext=entityNamesData.get(q.getTablesPath());
 			if(entityNameContext==null){
-				logger.info("entityNames的cacheKey:"+cachekey+" 命中缓存，但是没有符合tablePath="+q.getTablesPath()+"的数据");
+				logger.debug("entityNames的cacheKey:"+cachekey+" 命中缓存，但是没有符合tablePath="+q.getTablesPath()+"的数据");
 				String relation=parseJoinStrRelation(q,tableColumnsModule);
 				addCache(q.getTablesPath(),relation,q.getColumns(),entityNamesData,q.isHasSon(),q.getFatherEntity());
 				return relation;
 			}else{
-				logger.info("entityNames的cacheKey:"+cachekey+" 命中缓存，同时有tablePath="+q.getTablesPath()+"的数据，所以直接使用缓存");
+				logger.debug("entityNames的cacheKey:"+cachekey+" 命中缓存，同时有tablePath="+q.getTablesPath()+"的数据，所以直接使用缓存");
 				q.setColumns(entityNameContext.getColumns());
 				q.setHasSon(entityNameContext.getHasSon());
 				q.setFatherEntity(entityNameContext.getFatherEntity());
@@ -390,13 +390,13 @@ public class TablesRelationPropertyService{
 				if(intersection.size()>0){
 					//表示他们之间有中间表，选取中间表中的一个（中间表可能有很多，这一点也会产生很多问题，但可以通过配置解决）
 					intersectionTable=intersection.get(0);
-					logger.info("找到能和"+realTableRight+"联接的中间表"+intersectionTable);
+					logger.debug("找到能和"+realTableRight+"联接的中间表"+intersectionTable);
 					realLeftTable=tableLeft;
 					break;
 				}
 			}
 			if(realLeftTable==null){
-				logger.info("也没有找到能和"+realTableRight+"联接的中间表");
+				logger.debug("也没有找到能和"+realTableRight+"联接的中间表");
 				return false;
 			}
 		}
@@ -428,7 +428,7 @@ public class TablesRelationPropertyService{
 		String realTableRight=tableTwo.substring(SON_SEARCH_PREFIX.length());
 		SonSearchBody realTableRightSonSearchBody=q.getSonSearchs().get(realTableRight);
 		if(realTableRightSonSearchBody==null){
-			logger.warn("找不到 "+realTableRight+" 的sonSearchs定义，自定义一个");
+			logger.debug("找不到 "+realTableRight+" 的sonSearchs定义，自定义一个");
 			realTableRightSonSearchBody=new SonSearchBody();
 		}
 		String sql=converterSql(realTableRightSonSearchBody.getSql());

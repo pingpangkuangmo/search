@@ -29,7 +29,7 @@ public class SqlService implements Bootstrap{
 	@Autowired
 	private TablesRelationServiceCache tablesRelationServiceCache;
 	
-	private final Logger logger=LoggerFactory.getLogger(SqlService.class);
+	private static final Logger logger=LoggerFactory.getLogger(SqlService.class);
 	
 	private DefaultSqlParamsHandler defaultSqlParamsHandler;
 	
@@ -74,7 +74,7 @@ public class SqlService implements Bootstrap{
 		initParams(q);
 		String tablePrefix=config.getTablePrefix();
 		String relation=tablesRelationServiceCache.getTablesRelation(q);
-		logger.info("查询得出的表之间的relation为：{}",relation);
+		logger.debug("查询得出的表之间的relation为：{}",relation);
 		if(!StringUtils.isNotEmpty(relation)){
 			return sqlResult;
 		}
