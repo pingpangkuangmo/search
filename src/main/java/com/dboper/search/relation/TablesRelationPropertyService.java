@@ -562,10 +562,18 @@ public class TablesRelationPropertyService{
 			if(secondRelations==null){
 				secondRelations=new ArrayList<String>();
 			}
-			firstRelations.add(firstTable);
-			secondRelations.add(secondTable);
-			List<String> intersection=ListUtil.intersection(firstRelations,secondRelations);
-			if(intersection.size()>0){
+			List<String> intersection;
+			synchronized (TablesRelationPropertyService.this) {
+				if (!firstRelations.contains(firstTable)) {
+					firstRelations.add(firstTable);
+				}
+				if (!secondRelations.contains(secondTable)) {
+					secondRelations.add(secondTable);
+				}
+				intersection = ListUtil.intersection(firstRelations,
+						secondRelations);
+			}
+			if(intersection!=null && intersection.size()>0){
 				return firstTable+" join "+secondTable;
 			}
 			//需要继续不断地扩张，因为他们的级联关系可能有好几级
