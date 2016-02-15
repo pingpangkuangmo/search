@@ -434,7 +434,13 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 		return selectComplex(copy);
 	}
 	
-	
+	public Long getDBId(QueryBody q){
+		Map<String,Object> data=selectOne(q);
+		if(data!=null){
+			return (Long)data.get("id");
+		}
+		return null;
+	}
 	
 	private Map<String,Object> getOne(List<Map<String,Object>> data){
 		if(data!=null && data.size()>0){
