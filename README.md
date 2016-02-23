@@ -29,7 +29,7 @@ search
 
 # 测试案例
 
-URL: http://192.168.83.240:18080/api/search
+URL: http://XXXXXX:18080/api/search
 请求方法: POST请求
 
 请求体如下内容：
