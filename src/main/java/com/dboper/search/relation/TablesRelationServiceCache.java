@@ -96,7 +96,8 @@ public class TablesRelationServiceCache implements Bootstrap{
 		}
 		processAndOrTableName(q.getParams(), tables);
 		Assert.notEmpty(tables);
-		return getTablesRelation(tables,q.getAction());
+		//return getTablesRelation(tables,q.getAction());
+		return getTablesRelation(tables,null);
 	}
 	
 	@SuppressWarnings("unchecked")
