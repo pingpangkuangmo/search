@@ -3,8 +3,10 @@ package com.dboper.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.monitor.FileAlterationListener;
@@ -20,6 +22,7 @@ import org.springframework.util.StringUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.dboper.search.config.Configuration;
+import com.dboper.search.domain.AppendQueryBody;
 import com.dboper.search.domain.ComplexQueryBody;
 import com.dboper.search.domain.PageResult;
 import com.dboper.search.domain.QueryBody;
@@ -206,37 +209,77 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 		List<Map<String,Object>> firstDatas=select(complexQueryBody.getFirstAction(),complexQueryBody.getParams());
 		
 		Map<String,SecondQueryBody> secondQuery=complexQueryBody.getSecondQuery();
+		List<AppendQueryBody> appendQueryBodies = complexQueryBody.getAppendsQuery();
 		
-		Map<String,List<Object>> propertyListEntityPks=new HashMap<String,List<Object>>();
-		Map<String,Map<Object,List<Map<String,Object>>>> propertyListAndMapEntityPksEntity=new HashMap<String,Map<Object,List<Map<String,Object>>>>();
-		
-		for(Map<String,Object> firstData:firstDatas){
-			for(String property:secondQuery.keySet()){
-				SecondQueryBody secondQueryItem=secondQuery.get(property);
-				Object propertyDatas=firstData.get(property);
-				if(propertyDatas!=null){
-					if(propertyDatas instanceof List){
-						List<Map<String,Object>> propertyLists=(List<Map<String,Object>>)propertyDatas;
-						if(propertyLists.size()>0){
-							for(Map<String,Object> propertEntity:propertyLists){
-								collectPkAndEntity(property,propertEntity,secondQueryItem,
-										propertyListEntityPks,propertyListAndMapEntityPksEntity);
-							}
-						}
-					}else if(propertyDatas instanceof Map){
-						collectPkAndEntity(property,(Map<String,Object>)propertyDatas,secondQueryItem,
-								propertyListEntityPks,propertyListAndMapEntityPksEntity);
-					}
-				}
-				
+		Set<String> appendKeyFields = new HashSet<String>();
+		boolean append = appendQueryBodies.size() > 0;
+		if(append){
+			for(AppendQueryBody appendQueryBody:appendQueryBodies){
+				appendKeyFields.add(appendQueryBody.getKeyField());
 			}
 		}
-		for(String property:secondQuery.keySet()){
-			if(propertyListEntityPks.containsKey(property)){
-				List<Object> entityPks=propertyListEntityPks.get(property);
-				if(entityPks!=null && entityPks.size()>0){
-					Map<Object,List<Map<String,Object>>> propertyLists=propertyListAndMapEntityPksEntity.get(property);
-					replaceListData(secondQuery.get(property),entityPks,propertyLists);
+		
+		if(secondQuery.size()>0 || appendQueryBodies.size()>0){
+			Map<String,List<Object>> propertyListEntityPks=new HashMap<String,List<Object>>();
+			Map<String,Map<Object,List<Map<String,Object>>>> propertyListAndMapEntityPksEntity=new HashMap<String,Map<Object,List<Map<String,Object>>>>();
+			
+			Map<String,List<Object>> appendPropertyListEntityPks=new HashMap<String,List<Object>>();
+			for(Map<String,Object> firstData:firstDatas){
+				for(String property:secondQuery.keySet()){
+					SecondQueryBody secondQueryItem=secondQuery.get(property);
+					Object propertyDatas=firstData.get(property);
+					if(propertyDatas!=null){
+						if(propertyDatas instanceof List){
+							List<Map<String,Object>> propertyLists=(List<Map<String,Object>>)propertyDatas;
+							if(propertyLists.size()>0){
+								for(Map<String,Object> propertEntity:propertyLists){
+									collectPkAndEntity(property,propertEntity,secondQueryItem.getKeyField(),
+											propertyListEntityPks,propertyListAndMapEntityPksEntity);
+								}
+							}
+						}else if(propertyDatas instanceof Map){
+							collectPkAndEntity(property,(Map<String,Object>)propertyDatas,secondQueryItem.getKeyField(),
+									propertyListEntityPks,propertyListAndMapEntityPksEntity);
+						}
+					}
+				}
+				for(String appendKeyField:appendKeyFields){
+					collectPk(appendKeyField,firstData,appendPropertyListEntityPks);
+				}
+			}
+			for(String property:secondQuery.keySet()){
+				if(propertyListEntityPks.containsKey(property)){
+					List<Object> entityPks=propertyListEntityPks.get(property);
+					if(entityPks!=null && entityPks.size()>0){
+						Map<Object,List<Map<String,Object>>> propertyLists=propertyListAndMapEntityPksEntity.get(property);
+						replaceListData(secondQuery.get(property),entityPks,propertyLists);
+					}
+				}
+			}
+			if(append){
+				Map<String,Map<Object,Object>> appendMeta = new HashMap<String,Map<Object,Object>>();
+				for(AppendQueryBody appendQueryBody:appendQueryBodies){
+					String appendKeyField = appendQueryBody.getKeyField();
+					List<Object> entityPks=appendPropertyListEntityPks.get(appendKeyField);
+					if(entityPks!=null && entityPks.size()>0){
+						appendMeta.put(appendQueryBody.getKeyField()+appendQueryBody.getAppendKey(), getAppendListData(appendQueryBody,entityPks));
+					}
+				}
+				for(Map<String,Object> firstData:firstDatas){
+					for(AppendQueryBody appendQueryBody:appendQueryBodies){
+						String appendKeyField = appendQueryBody.getKeyField();
+						String appendKey = appendQueryBody.getAppendKey();
+						Object entityPk = firstData.get(appendKeyField);
+						Map<Object,Object> appendData = appendMeta.get(appendQueryBody.getKeyField()+appendQueryBody.getAppendKey());
+						Object originAppendData = null;
+						if(appendData != null){
+							originAppendData = appendData.get(entityPk);
+						}
+						if(originAppendData == null){
+							originAppendData = new ArrayList<Object>();
+						}
+						firstData.put(appendKey, originAppendData);
+					}
 				}
 			}
 		}
@@ -245,11 +288,47 @@ public class DBSearchService implements ProcessQueryFileChange,ProcessComplexQue
 		return firstDatas;
 	}
 	
-	private void collectPkAndEntity(String property,Map<String,Object> propertyData,SecondQueryBody secondQueryItem,
+	private void collectPk(String appendKeyField,
+			Map<String, Object> firstData,
+			Map<String, List<Object>> appendPropertyListEntityPks) {
+		List<Object> pks = appendPropertyListEntityPks.get(appendKeyField);
+		if(pks == null){
+			pks = new ArrayList<Object>();
+			appendPropertyListEntityPks.put(appendKeyField, pks);
+		}
+		Object pk = firstData.get(appendKeyField);
+		if(pk != null){
+			pks.add(pk);
+		}
+	}
+
+	private Map<Object,Object> getAppendListData(AppendQueryBody appendQueryBody,List<Object> entityPks) {
+		Map<Object,Object> ret = new HashMap<Object,Object>();
+		List<Map<String,Object>> appendDatas=null;
+		if(Boolean.TRUE.equals(appendQueryBody.getComplex())){
+			appendDatas=selectComplex(appendQueryBody.getSecondAction(),
+					MapUtil.getMap(appendQueryBody.getParamsKey()+"@in",entityPks));
+		}else{
+			appendDatas=select(appendQueryBody.getSecondAction(),
+					MapUtil.getMap(appendQueryBody.getParamsKey()+"@in",entityPks));
+		}
+		String appendKey = appendQueryBody.getAppendKey();
+		String keyField = appendQueryBody.getKeyField();
+		if(appendDatas!=null && appendDatas.size()>0){
+			for(Map<String,Object> appendData:appendDatas){
+				Object entityPk=appendData.get(keyField);
+				Object originAppendData = appendData.get(appendKey);
+				ret.put(entityPk, originAppendData);
+			} 
+		}
+		return ret;
+	}
+
+	private void collectPkAndEntity(String property,Map<String,Object> propertyData,String keyField,
 			Map<String,List<Object>> propertyListEntityPks,
 			Map<String,Map<Object,List<Map<String,Object>>>> propertyListAndMapEntityPksEntity){
 		if(propertyData!=null){
-			Object entityPk=propertyData.get(secondQueryItem.getKeyField());
+			Object entityPk=propertyData.get(keyField);
 			if(entityPk!=null){
 				List<Object> entityPks=propertyListEntityPks.get(property);
 				if(entityPks==null){

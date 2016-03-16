@@ -7,6 +7,7 @@ public class SecondQueryBody {
 	private String paramsKey;
 	private boolean complex;
 	
+	
 	public boolean isComplex() {
 		return complex;
 	}
