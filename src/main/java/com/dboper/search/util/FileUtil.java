@@ -35,7 +35,7 @@ public class FileUtil {
 	}
 	
 	public static String getInputStreamContent(InputStream in) throws IOException{
-		return IOUtils.toString(in);
+		return IOUtils.toString(in,"UTF-8");
 	}
 
 	public static Map<String,QueryBody> getQueryBodyFromFile(File file){
